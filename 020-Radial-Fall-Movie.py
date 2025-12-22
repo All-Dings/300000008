@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-# Radial Fall Animations For B(R)=G/R
-# - Stop at R = 1.0
-# - Output GIF + MP4 into "020-Radial-Fall-4-Gs"
-# - Single animation for G=64 (LEFT: motion, RIGHT: B(R) graph with moving point)
-# - Combined 2x2 animation for G=16,32,64,128
-# - Increased spacing between subplots
 
 import numpy as Np
 import matplotlib
@@ -14,10 +8,6 @@ from pathlib import Path
 
 matplotlib.rcParams["text.usetex"] = False
 
-
-# ------------------------------------------------------------
-# Physics simulation (Velocity Verlet)
-# ------------------------------------------------------------
 
 def Simulate_Radial_Fall(
 	G: float,
@@ -104,10 +94,6 @@ def Save_Animation_Gif_And_Mp4(
 	print(f"Saved: {Mp4_Path}")
 
 
-# ------------------------------------------------------------
-# Single animation (G = 64) with B(R) graph on the right
-# ------------------------------------------------------------
-
 def Make_Single_Animation(
 	G: float,
 	Output_Dir: Path,
@@ -129,14 +115,12 @@ def Make_Single_Animation(
 	T_Query = Np.linspace(0.0, T_End, Frame_Count)
 	T_Frame, R_Frame = Interpolate_R_T_With_Stop(T_Array, R_Array, T_Query)
 
-	# --- Figure with two panels ---
 	Fig = Plt.figure(figsize=(11, 5))
 	Grid = Fig.add_gridspec(1, 2, width_ratios=[1.05, 1.0], wspace=0.25)
 
 	Ax_Left = Fig.add_subplot(Grid[0, 0])
 	Ax_Right = Fig.add_subplot(Grid[0, 1])
 
-	# --- Left: motion ---
 	Ax_Left.set_aspect("equal", adjustable="box")
 	Ax_Left.set_xlim(-70, 70)
 	Ax_Left.set_ylim(-70, 70)
@@ -144,10 +128,11 @@ def Make_Single_Animation(
 	Ax_Left.set_ylabel("R")
 	Ax_Left.set_title(f"Radial Fall (B(R)=G/R), G={G:g}")
 
-	Ax_Left.scatter([0], [0], s=500, c="yellow", edgecolors="black", zorder=4)
+	Center = Ax_Left.scatter([0], [0], s=500, c="yellow", edgecolors="black", zorder=4)
 
 	Ball_Color = "tab:blue"
 
+	Trail_Left, = Ax_Left.plot([], [], linewidth=2, alpha=0.6, zorder=3)
 	Ball_Left, = Ax_Left.plot(
 		[],
 		[],
@@ -155,18 +140,16 @@ def Make_Single_Animation(
 		markersize=10,
 		linestyle="None",
 		color=Ball_Color,
+		zorder=6,
 	)
-
-	Trail_Left, = Ax_Left.plot([], [], linewidth=2, alpha=0.6)
 
 	Info_Text = Ax_Left.text(
 		0.02, 0.98, "", transform=Ax_Left.transAxes, va="top", ha="left"
 	)
 
-	Trail_X_List: list[float] = []
-	Trail_Y_List: list[float] = []
+	Trail_Left_X_List: list[float] = []
+	Trail_Left_Y_List: list[float] = []
 
-	# --- Right: B(R) curve ---
 	R_Curve = Np.linspace(R_Min, R_Start, 600)
 	B_Curve = G / R_Curve
 
@@ -184,9 +167,14 @@ def Make_Single_Animation(
 	Ax_Right.set_ylim(B_Min - B_Pad, B_Max + B_Pad)
 
 	Line_Right, = Ax_Right.plot(
-		R_Curve, B_Curve, linewidth=2, label=rf"$B={G:g}\cdot\frac{{1}}{{R}}$"
+		R_Curve,
+		B_Curve,
+		linewidth=2,
+		label=rf"$B={G:g}\cdot\frac{{1}}{{R}}$",
+		zorder=2,
 	)
 
+	Trail_Right, = Ax_Right.plot([], [], linewidth=2, alpha=0.6, zorder=3)
 	Point_Right, = Ax_Right.plot(
 		[],
 		[],
@@ -194,29 +182,38 @@ def Make_Single_Animation(
 		markersize=10,
 		linestyle="None",
 		color=Ball_Color,
+		zorder=5,
 	)
 
 	Ax_Right.legend(loc="upper right", framealpha=0.9)
+
+	Trail_Right_R_List: list[float] = []
+	Trail_Right_B_List: list[float] = []
 
 	def Init():
 		Ball_Left.set_data([], [])
 		Trail_Left.set_data([], [])
 		Info_Text.set_text("")
-		Trail_X_List.clear()
-		Trail_Y_List.clear()
+		Trail_Left_X_List.clear()
+		Trail_Left_Y_List.clear()
+
 		Point_Right.set_data([], [])
-		return Ball_Left, Trail_Left, Info_Text, Point_Right, Line_Right
+		Trail_Right.set_data([], [])
+		Trail_Right_R_List.clear()
+		Trail_Right_B_List.clear()
+
+		return Ball_Left, Trail_Left, Info_Text, Point_Right, Trail_Right, Line_Right, Center
 
 	def Update(Frame_Index: int):
 		R_Value = float(R_Frame[Frame_Index])
 		T_Value = float(T_Frame[Frame_Index])
 		B_Value = G / R_Value
 
-		Trail_X_List.append(R_Value)
-		Trail_Y_List.append(0.0)
+		Trail_Left_X_List.append(R_Value)
+		Trail_Left_Y_List.append(0.0)
 
 		Ball_Left.set_data([R_Value], [0.0])
-		Trail_Left.set_data(Trail_X_List, Trail_Y_List)
+		Trail_Left.set_data(Trail_Left_X_List, Trail_Left_Y_List)
 
 		Info_Text.set_text(
 			f"G = {G:g}\n"
@@ -225,9 +222,13 @@ def Make_Single_Animation(
 			f"B(R) = {B_Value:.2f}"
 		)
 
-		Point_Right.set_data([R_Value], [B_Value])
+		Trail_Right_R_List.append(R_Value)
+		Trail_Right_B_List.append(B_Value)
 
-		return Ball_Left, Trail_Left, Info_Text, Point_Right, Line_Right
+		Point_Right.set_data([R_Value], [B_Value])
+		Trail_Right.set_data(Trail_Right_R_List, Trail_Right_B_List)
+
+		return Ball_Left, Trail_Left, Info_Text, Point_Right, Trail_Right, Line_Right, Center
 
 	Fig.tight_layout()
 
@@ -242,10 +243,6 @@ def Make_Single_Animation(
 	Save_Animation_Gif_And_Mp4(Anim, Output_Dir, Name_Base, Fps)
 	Plt.close(Fig)
 
-
-# ------------------------------------------------------------
-# Combined animation (unchanged logic, style consistent)
-# ------------------------------------------------------------
 
 def Make_Combined_Animation_2x2(
 	G_List: list[float],
@@ -296,8 +293,8 @@ def Make_Combined_Animation_2x2(
 
 		Ax_i.scatter([0], [0], s=500, c="yellow", edgecolors="black", zorder=4)
 
-		B, = Ax_i.plot([], [], marker="o", markersize=10, linestyle="None")
-		T, = Ax_i.plot([], [], linewidth=2, alpha=0.6)
+		B, = Ax_i.plot([], [], marker="o", markersize=10, linestyle="None", zorder=6)
+		T, = Ax_i.plot([], [], linewidth=2, alpha=0.6, zorder=3)
 		Txt = Ax_i.text(0.02, 0.98, "", transform=Ax_i.transAxes, va="top", ha="left")
 
 		Balls.append(B)
@@ -344,10 +341,6 @@ def Make_Combined_Animation_2x2(
 	Save_Animation_Gif_And_Mp4(Anim, Output_Dir, Name_Base, Fps)
 	Plt.close(Fig)
 
-
-# ------------------------------------------------------------
-# Main
-# ------------------------------------------------------------
 
 def Main() -> None:
 	Output_Dir = Path("020-Radial-Fall-4-Gs")
