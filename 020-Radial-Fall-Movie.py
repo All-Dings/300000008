@@ -130,96 +130,121 @@ def Make_Single_Animation(
 	T_Frame, R_Frame = Interpolate_R_T_With_Stop(T_Array, R_Array, T_Query)
 
 	# --- Figure with two panels ---
-	fig = Plt.figure(figsize=(11, 5))
-	gs = fig.add_gridspec(1, 2, width_ratios=[1.05, 1.0], wspace=0.25)
+	Fig = Plt.figure(figsize=(11, 5))
+	Grid = Fig.add_gridspec(1, 2, width_ratios=[1.05, 1.0], wspace=0.25)
 
-	ax_left = fig.add_subplot(gs[0, 0])
-	ax_right = fig.add_subplot(gs[0, 1])
+	Ax_Left = Fig.add_subplot(Grid[0, 0])
+	Ax_Right = Fig.add_subplot(Grid[0, 1])
 
 	# --- Left: motion ---
-	ax_left.set_aspect("equal", adjustable="box")
-	ax_left.set_xlim(-70, 70)
-	ax_left.set_ylim(-70, 70)
-	ax_left.set_xlabel("R")
-	ax_left.set_ylabel("R")
-	ax_left.set_title(f"Radial Fall (B(R)=G/R), G={G:g}")
+	Ax_Left.set_aspect("equal", adjustable="box")
+	Ax_Left.set_xlim(-70, 70)
+	Ax_Left.set_ylim(-70, 70)
+	Ax_Left.set_xlabel("R")
+	Ax_Left.set_ylabel("R")
+	Ax_Left.set_title(f"Radial Fall (B(R)=G/R), G={G:g}")
 
-	ax_left.scatter([0], [0], s=500, c="yellow", edgecolors="black", zorder=4)
+	Ax_Left.scatter([0], [0], s=500, c="yellow", edgecolors="black", zorder=4)
 
-	ball_left, = ax_left.plot([], [], marker="o", markersize=10, linestyle="None")
-	trail_left, = ax_left.plot([], [], linewidth=2, alpha=0.6)
-	info = ax_left.text(0.02, 0.98, "", transform=ax_left.transAxes, va="top", ha="left")
+	Ball_Color = "tab:blue"
 
-	Trail_X, Trail_Y = [], []
+	Ball_Left, = Ax_Left.plot(
+		[],
+		[],
+		marker="o",
+		markersize=10,
+		linestyle="None",
+		color=Ball_Color,
+	)
 
-	# --- Right: B(R) curve + moving point ---
+	Trail_Left, = Ax_Left.plot([], [], linewidth=2, alpha=0.6)
+
+	Info_Text = Ax_Left.text(
+		0.02, 0.98, "", transform=Ax_Left.transAxes, va="top", ha="left"
+	)
+
+	Trail_X_List: list[float] = []
+	Trail_Y_List: list[float] = []
+
+	# --- Right: B(R) curve ---
 	R_Curve = Np.linspace(R_Min, R_Start, 600)
 	B_Curve = G / R_Curve
 
-	ax_right.set_title("B in Abhängigkeit von R")
-	ax_right.set_xlabel("R")
-	ax_right.set_ylabel("B")
-	ax_right.grid(True, alpha=0.35)
+	Ax_Right.set_title("B in Abhängigkeit von R")
+	Ax_Right.set_xlabel("R")
+	Ax_Right.set_ylabel("B")
+	Ax_Right.grid(True, alpha=0.35)
 
-	# Axis limits with a little padding
 	R_Pad = 0.05 * (R_Start - R_Min)
 	B_Min = float(G / R_Start)
 	B_Max = float(G / R_Min)
 	B_Pad = 0.05 * (B_Max - B_Min)
 
-	ax_right.set_xlim(R_Min - R_Pad, R_Start + R_Pad)
-	ax_right.set_ylim(B_Min - B_Pad, B_Max + B_Pad)
+	Ax_Right.set_xlim(R_Min - R_Pad, R_Start + R_Pad)
+	Ax_Right.set_ylim(B_Min - B_Pad, B_Max + B_Pad)
 
-	line_right, = ax_right.plot(R_Curve, B_Curve, linewidth=2, label=rf"$B={G:g}\cdot\frac{{1}}{{R}}$")
-	point_right, = ax_right.plot([], [], marker="o", markersize=10, linestyle="None")
+	Line_Right, = Ax_Right.plot(
+		R_Curve, B_Curve, linewidth=2, label=rf"$B={G:g}\cdot\frac{{1}}{{R}}$"
+	)
 
-	# Optional legend (static)
-	ax_right.legend(loc="upper right", framealpha=0.9)
+	Point_Right, = Ax_Right.plot(
+		[],
+		[],
+		marker="o",
+		markersize=10,
+		linestyle="None",
+		color=Ball_Color,
+	)
 
-	def init():
-		ball_left.set_data([], [])
-		trail_left.set_data([], [])
-		info.set_text("")
-		Trail_X.clear()
-		Trail_Y.clear()
+	Ax_Right.legend(loc="upper right", framealpha=0.9)
 
-		point_right.set_data([], [])
-		return ball_left, trail_left, info, point_right, line_right
+	def Init():
+		Ball_Left.set_data([], [])
+		Trail_Left.set_data([], [])
+		Info_Text.set_text("")
+		Trail_X_List.clear()
+		Trail_Y_List.clear()
+		Point_Right.set_data([], [])
+		return Ball_Left, Trail_Left, Info_Text, Point_Right, Line_Right
 
-	def update(I: int):
-		Rv = float(R_Frame[I])
-		Tv = float(T_Frame[I])
-		Bv = G / Rv
+	def Update(Frame_Index: int):
+		R_Value = float(R_Frame[Frame_Index])
+		T_Value = float(T_Frame[Frame_Index])
+		B_Value = G / R_Value
 
-		# Left panel updates
-		Trail_X.append(Rv)
-		Trail_Y.append(0.0)
+		Trail_X_List.append(R_Value)
+		Trail_Y_List.append(0.0)
 
-		ball_left.set_data([Rv], [0.0])
-		trail_left.set_data(Trail_X, Trail_Y)
+		Ball_Left.set_data([R_Value], [0.0])
+		Trail_Left.set_data(Trail_X_List, Trail_Y_List)
 
-		info.set_text(
+		Info_Text.set_text(
 			f"G = {G:g}\n"
-			f"T = {Tv:.2f}\n"
-			f"R = {Rv:.2f}\n"
-			f"B(R) = {Bv:.2f}"
+			f"T = {T_Value:.2f}\n"
+			f"R = {R_Value:.2f}\n"
+			f"B(R) = {B_Value:.2f}"
 		)
 
-		# Right panel moving point (R, B)
-		point_right.set_data([Rv], [Bv])
+		Point_Right.set_data([R_Value], [B_Value])
 
-		return ball_left, trail_left, info, point_right, line_right
+		return Ball_Left, Trail_Left, Info_Text, Point_Right, Line_Right
 
-	# Layout to avoid clipped titles
-	fig.tight_layout()
+	Fig.tight_layout()
 
-	anim = FuncAnimation(fig, update, frames=Frame_Count, init_func=init, blit=True)
-	Save_Animation_Gif_And_Mp4(anim, Output_Dir, Name_Base, Fps)
-	Plt.close(fig)
+	Anim = FuncAnimation(
+		Fig,
+		Update,
+		frames=Frame_Count,
+		init_func=Init,
+		blit=True,
+	)
+
+	Save_Animation_Gif_And_Mp4(Anim, Output_Dir, Name_Base, Fps)
+	Plt.close(Fig)
 
 
 # ------------------------------------------------------------
-# Combined animation (2x2, increased spacing)
+# Combined animation (unchanged logic, style consistent)
 # ------------------------------------------------------------
 
 def Make_Combined_Animation_2x2(
@@ -252,10 +277,8 @@ def Make_Combined_Animation_2x2(
 		T_Frame_List.append(Tf)
 		R_Frame_List.append(Rf)
 
-	fig, Ax = Plt.subplots(2, 2, figsize=(9, 9))
-
-	# >>> increased spacing <<<
-	fig.subplots_adjust(wspace=0.35, hspace=0.35)
+	Fig, Ax = Plt.subplots(2, 2, figsize=(9, 9))
+	Fig.subplots_adjust(wspace=0.35, hspace=0.35)
 
 	Ax_List = [Ax[0, 0], Ax[0, 1], Ax[1, 0], Ax[1, 1]]
 
@@ -281,10 +304,10 @@ def Make_Combined_Animation_2x2(
 		Trails.append(T)
 		Texts.append(Txt)
 
-	fig.suptitle("Radial Fall Vergleich: B(R)=G/R", fontsize=14)
-	fig.tight_layout(rect=[0, 0, 1, 0.94])
+	Fig.suptitle("Radial Fall Vergleich: B(R)=G/R", fontsize=14)
+	Fig.tight_layout(rect=[0, 0, 1, 0.94])
 
-	def init():
+	def Init():
 		A = []
 		for I in range(4):
 			Balls[I].set_data([], [])
@@ -295,7 +318,7 @@ def Make_Combined_Animation_2x2(
 			A += [Balls[I], Trails[I], Texts[I]]
 		return A
 
-	def update(Frame: int):
+	def Update(Frame: int):
 		A = []
 		for I, G in enumerate(G_List):
 			Rv = float(R_Frame_List[I][Frame])
@@ -317,9 +340,9 @@ def Make_Combined_Animation_2x2(
 			A += [Balls[I], Trails[I], Texts[I]]
 		return A
 
-	anim = FuncAnimation(fig, update, frames=Frame_Count, init_func=init, blit=True)
-	Save_Animation_Gif_And_Mp4(anim, Output_Dir, Name_Base, Fps)
-	Plt.close(fig)
+	Anim = FuncAnimation(Fig, Update, frames=Frame_Count, init_func=Init, blit=True)
+	Save_Animation_Gif_And_Mp4(Anim, Output_Dir, Name_Base, Fps)
+	Plt.close(Fig)
 
 
 # ------------------------------------------------------------
