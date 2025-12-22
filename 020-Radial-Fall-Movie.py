@@ -206,5 +206,145 @@ def Make_Single_Animation(
 		)
 
 		# Right panel moving point (R, B)
-		point_right.set_data([Rv], [Bv]
+		point_right.set_data([Rv], [Bv])
+
+		return ball_left, trail_left, info, point_right, line_right
+
+	# Layout to avoid clipped titles
+	fig.tight_layout()
+
+	anim = FuncAnimation(fig, update, frames=Frame_Count, init_func=init, blit=True)
+	Save_Animation_Gif_And_Mp4(anim, Output_Dir, Name_Base, Fps)
+	Plt.close(fig)
+
+
+# ------------------------------------------------------------
+# Combined animation (2x2, increased spacing)
+# ------------------------------------------------------------
+
+def Make_Combined_Animation_2x2(
+	G_List: list[float],
+	Output_Dir: Path,
+	Name_Base: str,
+	R_Start: float = 64.0,
+	V_Start: float = 0.0,
+	Dt: float = 0.01,
+	Step_Count: int = 200_000,
+	R_Min: float = 1.0,
+	Frame_Count: int = 240,
+	Fps: int = 25,
+) -> None:
+
+	Series = []
+	T_End_List = []
+
+	for G in G_List:
+		Ta, Ra = Simulate_Radial_Fall(G, R_Start, V_Start, Dt, Step_Count, R_Min)
+		Series.append((G, Ta, Ra))
+		T_End_List.append(float(Ta[-1]))
+
+	T_End_Max = max(T_End_List)
+	T_Query = Np.linspace(0.0, T_End_Max, Frame_Count)
+
+	T_Frame_List, R_Frame_List = [], []
+	for (_, Ta, Ra) in Series:
+		Tf, Rf = Interpolate_R_T_With_Stop(Ta, Ra, T_Query)
+		T_Frame_List.append(Tf)
+		R_Frame_List.append(Rf)
+
+	fig, Ax = Plt.subplots(2, 2, figsize=(9, 9))
+
+	# >>> increased spacing <<<
+	fig.subplots_adjust(wspace=0.35, hspace=0.35)
+
+	Ax_List = [Ax[0, 0], Ax[0, 1], Ax[1, 0], Ax[1, 1]]
+
+	Balls, Trails, Texts = [], [], []
+	Trail_X_List = [[], [], [], []]
+	Trail_Y_List = [[], [], [], []]
+
+	for Ax_i, G in zip(Ax_List, G_List):
+		Ax_i.set_aspect("equal", adjustable="box")
+		Ax_i.set_xlim(-70, 70)
+		Ax_i.set_ylim(-70, 70)
+		Ax_i.set_xlabel("R")
+		Ax_i.set_ylabel("R")
+		Ax_i.set_title(f"G = {G:g}")
+
+		Ax_i.scatter([0], [0], s=500, c="yellow", edgecolors="black", zorder=4)
+
+		B, = Ax_i.plot([], [], marker="o", markersize=10, linestyle="None")
+		T, = Ax_i.plot([], [], linewidth=2, alpha=0.6)
+		Txt = Ax_i.text(0.02, 0.98, "", transform=Ax_i.transAxes, va="top", ha="left")
+
+		Balls.append(B)
+		Trails.append(T)
+		Texts.append(Txt)
+
+	fig.suptitle("Radial Fall Vergleich: B(R)=G/R", fontsize=14)
+	fig.tight_layout(rect=[0, 0, 1, 0.94])
+
+	def init():
+		A = []
+		for I in range(4):
+			Balls[I].set_data([], [])
+			Trails[I].set_data([], [])
+			Texts[I].set_text("")
+			Trail_X_List[I].clear()
+			Trail_Y_List[I].clear()
+			A += [Balls[I], Trails[I], Texts[I]]
+		return A
+
+	def update(Frame: int):
+		A = []
+		for I, G in enumerate(G_List):
+			Rv = float(R_Frame_List[I][Frame])
+			Tv = float(T_Frame_List[I][Frame])
+			Bv = G / Rv
+
+			Trail_X_List[I].append(Rv)
+			Trail_Y_List[I].append(0.0)
+
+			Balls[I].set_data([Rv], [0.0])
+			Trails[I].set_data(Trail_X_List[I], Trail_Y_List[I])
+
+			Texts[I].set_text(
+				f"T = {Tv:.2f}\n"
+				f"R = {Rv:.2f}\n"
+				f"B(R) = {Bv:.2f}"
+			)
+
+			A += [Balls[I], Trails[I], Texts[I]]
+		return A
+
+	anim = FuncAnimation(fig, update, frames=Frame_Count, init_func=init, blit=True)
+	Save_Animation_Gif_And_Mp4(anim, Output_Dir, Name_Base, Fps)
+	Plt.close(fig)
+
+
+# ------------------------------------------------------------
+# Main
+# ------------------------------------------------------------
+
+def Main() -> None:
+	Output_Dir = Path("020-Radial-Fall-4-Gs")
+	Output_Dir.mkdir(exist_ok=True)
+
+	Make_Single_Animation(
+		G=64.0,
+		Output_Dir=Output_Dir,
+		Name_Base="radial_fall_single_G_64",
+	)
+
+	Make_Combined_Animation_2x2(
+		G_List=[16.0, 32.0, 64.0, 128.0],
+		Output_Dir=Output_Dir,
+		Name_Base="radial_fall_combined_G_16_32_64_128",
+	)
+
+	print("Done. Files written to:", Output_Dir)
+
+
+if __name__ == "__main__":
+	Main()
 
