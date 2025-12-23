@@ -44,7 +44,6 @@ def Simulate_Multi_Circular_Orbits(
 	Vx = Np.zeros(Body_Count, dtype=float)
 	Vy = Np.zeros(Body_Count, dtype=float)
 
-	# Spread start angles so bodies don't overlap
 	Angle_Array = Np.linspace(0.0, 2.0 * Np.pi, Body_Count, endpoint=False)
 
 	for I, R_Orbit in enumerate(R_List):
@@ -53,13 +52,12 @@ def Simulate_Multi_Circular_Orbits(
 		X[I] = R_Orbit * Np.cos(Theta)
 		Y[I] = R_Orbit * Np.sin(Theta)
 
-		# Tangential direction: rotate radial vector by +90°
 		Vx[I] = -V_Orbit * Np.sin(Theta)
 		Vy[I] = +V_Orbit * Np.cos(Theta)
 
 	def Acc(Xv: float, Yv: float) -> tuple[float, float]:
 		R = Np.hypot(Xv, Yv)
-		Factor = -G / (R * R)  # so |a| = G/R
+		Factor = -G / (R * R)  # => |a| = G/R
 		return Factor * Xv, Factor * Yv
 
 	for Step in range(Step_Count):
@@ -90,17 +88,23 @@ def Simulate_Multi_Circular_Orbits(
 	return X_Array, Y_Array
 
 
-def Make_Multi_Orbit_Animation(
+def Make_Orbit_And_Line_Animation(
 	G: float,
 	R_List: list[float],
 	Output_Dir: Path,
 	Name_Base: str,
 	V_Orbit: float = 8.0,
 	Dt: float = 0.02,
-	Step_Count: int = 10_000,
 	Frame_Count: int = 360,
 	Fps: int = 25,
 ) -> None:
+
+	R_Max = float(max(R_List))
+
+	T_Orbit_Max = 2.0 * Np.pi * R_Max / V_Orbit
+	T_Total = 2.0 * T_Orbit_Max  # two cycles of the outer orbit
+
+	Step_Count = int(Np.ceil(T_Total / Dt)) + 1
 
 	X_All, Y_All = Simulate_Multi_Circular_Orbits(
 		G=G,
@@ -110,50 +114,119 @@ def Make_Multi_Orbit_Animation(
 		Step_Count=Step_Count,
 	)
 
-	Idx = Np.linspace(0, Step_Count - 1, Frame_Count).astype(int)
+	T_Step = Np.arange(Step_Count, dtype=float) * Dt
+	T_Frame = Np.linspace(0.0, T_Total, Frame_Count)
+	Idx = Np.clip((T_Frame / Dt).astype(int), 0, Step_Count - 1)
+
 	X_Frame = X_All[:, Idx]
 	Y_Frame = Y_All[:, Idx]
 
 	Planet_Name_List = ["Merkur", "Venus", "Erde", "Mars", "Jupiter", "Saturn", "Uranus"]
-
-	# Planet-ish colors (approx)
 	Planet_Color_List = [
-		"#9e9e9e",  # Merkur (gray)
-		"#d2b48c",  # Venus (tan)
-		"#1f77b4",  # Erde (blue)
-		"#d62728",  # Mars (red)
-		"#bc7c3a",  # Jupiter (brown/orange)
-		"#e6d8a8",  # Saturn (pale yellow)
-		"#7fd3ff",  # Uranus (light cyan)
+		"#9e9e9e",  # Merkur
+		"#d2b48c",  # Venus
+		"#1f77b4",  # Erde
+		"#d62728",  # Mars
+		"#bc7c3a",  # Jupiter
+		"#e6d8a8",  # Saturn
+		"#7fd3ff",  # Uranus
 	]
 
-	Fig, Ax = Plt.subplots(figsize=(7, 7))
+	Fig = Plt.figure(figsize=(14, 7))
+	Grid = Fig.add_gridspec(1, 2, width_ratios=[1.05, 1.15], wspace=0.18)
+	Ax_Left = Fig.add_subplot(Grid[0, 0])
+	Ax_Right = Fig.add_subplot(Grid[0, 1])
 
-	Limit = max(R_List) + 12
-	Ax.set_aspect("equal", adjustable="box")
-	Ax.set_xlim(-Limit, Limit)
-	Ax.set_ylim(-Limit, Limit)
-	Ax.set_xlabel("x")
-	Ax.set_ylabel("y")
-	Ax.set_title(f"7 Kreisbahnen (R=1..64), G={G:g}, v={V_Orbit:g}")
+	# -------------------------
+	# Left: circular orbits
+	# -------------------------
+	Limit = R_Max + 12.0
+	Ax_Left.set_aspect("equal", adjustable="box")
+	Ax_Left.set_xlim(-Limit, Limit)
+	Ax_Left.set_ylim(-Limit, Limit)
+	Ax_Left.set_xlabel("x")
+	Ax_Left.set_ylabel("y")
+	Ax_Left.set_title(f"Kreisbahnen (R=1..64), G={G:g}, v={V_Orbit:g}\nDauer: 2 Zyklen bei R=64")
 
-	Center = Ax.scatter([0], [0], s=650, c="yellow", edgecolors="black", zorder=2)
+	Center_Left = Ax_Left.scatter([0], [0], s=650, c="yellow", edgecolors="black", zorder=2)
 
-	# Optional: show reference circles for each radius
+	# faint reference circles
+	Theta = Np.linspace(0.0, 2.0 * Np.pi, 600)
 	for R_Orbit in R_List:
-		Theta = Np.linspace(0.0, 2.0 * Np.pi, 400)
-		Ax.plot(R_Orbit * Np.cos(Theta), R_Orbit * Np.sin(Theta), linewidth=1, alpha=0.15, zorder=1)
+		Ax_Left.plot(R_Orbit * Np.cos(Theta), R_Orbit * Np.sin(Theta), linewidth=1, alpha=0.12, zorder=1)
 
-	Trail_List = []
-	Ball_List = []
-	Trail_X_List_List: list[list[float]] = []
-	Trail_Y_List_List: list[list[float]] = []
+	# -------------------------
+	# Right: straight-line motion
+	# -------------------------
+	Distance_Total = V_Orbit * T_Total  # same for all, since v and T_total are fixed
+
+	Ax_Right.set_xlabel("x")
+	Ax_Right.set_ylabel("Linie")
+	Ax_Right.set_title("Gleiche Geschwindigkeit v=8 auf geraden Linien\nMarker zeigen Start/Ende jeder Umlauf-Periode")
+	Ax_Right.grid(True, alpha=0.25)
+
+	Y_Offset_List = Np.linspace(len(R_List) - 1, 0, len(R_List))
+	Y_Scale = 1.0
+
+	X_Min = -0.05 * Distance_Total
+	X_Max = 1.05 * Distance_Total
+	Ax_Right.set_xlim(X_Min, X_Max)
+	Ax_Right.set_ylim(-1.5, len(R_List) - 0.5)
+
+	Center_Right = Ax_Right.scatter([], [], s=0, alpha=0.0)  # placeholder for blit list
+
+	# Draw period markers per radius on the straight lines:
+	# Period for radius R: T(R) = 2πR / v
+	# One-orbit distance on straight line: v*T(R) = 2πR
+	for I, R_Orbit in enumerate(R_List):
+		Color = Planet_Color_List[I]
+		Y0 = float(Y_Offset_List[I] * Y_Scale)
+
+		T_Orbit = 2.0 * Np.pi * float(R_Orbit) / V_Orbit
+		Cycle_Count = int(round(T_Total / T_Orbit))
+
+		Marker_X_List = [0.0 + (2.0 * Np.pi * float(R_Orbit)) * K for K in range(Cycle_Count + 1)]
+
+		Ax_Right.hlines(Y0, 0.0, Distance_Total, linewidth=2, alpha=0.12, color=Color, zorder=1)
+
+		# tick marks at cycle boundaries (start/end of each "Umlaufbahn")
+		for K, Xk in enumerate(Marker_X_List):
+			Is_Ends = (K == 0) or (K == Cycle_Count)
+			Tick_Half = 0.26 if Is_Ends else 0.18
+			Lw = 3 if Is_Ends else 2
+			Alpha = 0.95 if Is_Ends else 0.75
+			Ax_Right.vlines(Xk, Y0 - Tick_Half, Y0 + Tick_Half, color=Color, linewidth=Lw, alpha=Alpha, zorder=2)
+
+		# small label on the left side
+		Ax_Right.text(
+			X_Min + 0.01 * (X_Max - X_Min),
+			Y0,
+			f"R={R_Orbit:g}",
+			va="center",
+			ha="left",
+			fontsize=9,
+			color=Color,
+		)
+
+	# -------------------------
+	# Artists: balls + trails (both panels)
+	# -------------------------
+	Ball_Left_List = []
+	Trail_Left_List = []
+	Trail_Left_X_List_List: list[list[float]] = []
+	Trail_Left_Y_List_List: list[list[float]] = []
+
+	Ball_Right_List = []
+	Trail_Right_List = []
+	Trail_Right_X_List_List: list[list[float]] = []
+	Trail_Right_Y_List_List: list[list[float]] = []
 
 	for I in range(len(R_List)):
 		Color = Planet_Color_List[I]
+		Label = Planet_Name_List[I] if I < len(Planet_Name_List) else f"Objekt {I+1}"
 
-		Trail, = Ax.plot([], [], linewidth=2, alpha=0.6, color=Color, zorder=3)
-		Ball, = Ax.plot(
+		Trail_Left, = Ax_Left.plot([], [], linewidth=2, alpha=0.55, color=Color, zorder=3)
+		Ball_Left, = Ax_Left.plot(
 			[],
 			[],
 			marker="o",
@@ -161,39 +234,88 @@ def Make_Multi_Orbit_Animation(
 			linestyle="None",
 			color=Color,
 			zorder=5,
-			label=f"{Planet_Name_List[I]} (R={R_List[I]:g})",
+			label=f"{Label} (R={R_List[I]:g})",
 		)
 
-		Trail_List.append(Trail)
-		Ball_List.append(Ball)
-		Trail_X_List_List.append([])
-		Trail_Y_List_List.append([])
+		Ball_Left_List.append(Ball_Left)
+		Trail_Left_List.append(Trail_Left)
+		Trail_Left_X_List_List.append([])
+		Trail_Left_Y_List_List.append([])
 
-	Ax.legend(loc="upper right", framealpha=0.9)
+		Y0 = float(Y_Offset_List[I] * Y_Scale)
+
+		Trail_Right, = Ax_Right.plot([], [], linewidth=2, alpha=0.55, color=Color, zorder=3)
+		Ball_Right, = Ax_Right.plot(
+			[],
+			[],
+			marker="o",
+			markersize=9,
+			linestyle="None",
+			color=Color,
+			zorder=5,
+		)
+
+		Ball_Right_List.append(Ball_Right)
+		Trail_Right_List.append(Trail_Right)
+		Trail_Right_X_List_List.append([])
+		Trail_Right_Y_List_List.append([])
+
+	Ax_Left.legend(loc="upper right", framealpha=0.9)
 
 	def Init():
-		Artist_List = [Center]
+		Artist_List = [Center_Left, Center_Right]
+
 		for I in range(len(R_List)):
-			Ball_List[I].set_data([], [])
-			Trail_List[I].set_data([], [])
-			Trail_X_List_List[I].clear()
-			Trail_Y_List_List[I].clear()
-			Artist_List += [Trail_List[I], Ball_List[I]]
+			Ball_Left_List[I].set_data([], [])
+			Trail_Left_List[I].set_data([], [])
+			Trail_Left_X_List_List[I].clear()
+			Trail_Left_Y_List_List[I].clear()
+
+			Ball_Right_List[I].set_data([], [])
+			Trail_Right_List[I].set_data([], [])
+			Trail_Right_X_List_List[I].clear()
+			Trail_Right_Y_List_List[I].clear()
+
+			Artist_List += [
+				Trail_Left_List[I],
+				Ball_Left_List[I],
+				Trail_Right_List[I],
+				Ball_Right_List[I],
+			]
+
 		return Artist_List
 
 	def Update(Frame_Index: int):
-		Artist_List = [Center]
+		Tv = float(T_Frame[Frame_Index])
+		Artist_List = [Center_Left, Center_Right]
+
 		for I in range(len(R_List)):
+			# Left: orbit from simulation
 			Xv = float(X_Frame[I, Frame_Index])
 			Yv = float(Y_Frame[I, Frame_Index])
 
-			Trail_X_List_List[I].append(Xv)
-			Trail_Y_List_List[I].append(Yv)
+			Trail_Left_X_List_List[I].append(Xv)
+			Trail_Left_Y_List_List[I].append(Yv)
 
-			Ball_List[I].set_data([Xv], [Yv])
-			Trail_List[I].set_data(Trail_X_List_List[I], Trail_Y_List_List[I])
+			Ball_Left_List[I].set_data([Xv], [Yv])
+			Trail_Left_List[I].set_data(Trail_Left_X_List_List[I], Trail_Left_Y_List_List[I])
 
-			Artist_List += [Trail_List[I], Ball_List[I]]
+			# Right: straight-line motion with same speed
+			X_Line = V_Orbit * Tv
+			Y_Line = float(Y_Offset_List[I] * Y_Scale)
+
+			Trail_Right_X_List_List[I].append(X_Line)
+			Trail_Right_Y_List_List[I].append(Y_Line)
+
+			Ball_Right_List[I].set_data([X_Line], [Y_Line])
+			Trail_Right_List[I].set_data(Trail_Right_X_List_List[I], Trail_Right_Y_List_List[I])
+
+			Artist_List += [
+				Trail_Left_List[I],
+				Ball_Left_List[I],
+				Trail_Right_List[I],
+				Ball_Right_List[I],
+			]
 
 		return Artist_List
 
@@ -215,12 +337,15 @@ def Main() -> None:
 
 	R_List = [1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0]
 
-	Make_Multi_Orbit_Animation(
+	Make_Orbit_And_Line_Animation(
 		G=64.0,
 		R_List=R_List,
 		Output_Dir=Output_Dir,
-		Name_Base="multi_orbit_planets_G_64_R_1_to_64",
+		Name_Base="orbits_vs_lines_two_cycles_R_64",
 		V_Orbit=8.0,
+		Dt=0.02,
+		Frame_Count=420,
+		Fps=25,
 	)
 
 	print("Done. Files written to:", Output_Dir)
