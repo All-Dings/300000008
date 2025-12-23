@@ -148,71 +148,44 @@ def Make_Circular_Orbit_Forces_Animation(
 		Remove_Artist(Rect)
 
 		Scale = 25.0
-
 		Dx = Scale * Fgx
 		Dy = Scale * Fgy
 
 		Arrow_Total = Ax.arrow(
-			Xv,
-			Yv,
-			Dx,
-			Dy,
-			head_width=2.0,
-			head_length=3.0,
+			Xv, Yv, Dx, Dy,
+			head_width=2.0, head_length=3.0,
 			length_includes_head=True,
-			ec="black",
-			fc="black",
-			zorder=5,
+			ec="black", fc="black", zorder=5,
 		)
 
 		Arrow_X = Ax.arrow(
-			Xv,
-			Yv,
-			Dx,
-			0.0,
-			head_width=1.5,
-			head_length=2.5,
+			Xv, Yv, Dx, 0.0,
+			head_width=1.5, head_length=2.5,
 			length_includes_head=True,
-			ec="tab:red",
-			fc="tab:red",
-			zorder=4,
+			ec="tab:red", fc="tab:red", zorder=4,
 		)
 
 		Arrow_Y = Ax.arrow(
-			Xv,
-			Yv,
-			0.0,
-			Dy,
-			head_width=1.5,
-			head_length=2.5,
+			Xv, Yv, 0.0, Dy,
+			head_width=1.5, head_length=2.5,
 			length_includes_head=True,
-			ec="tab:green",
-			fc="tab:green",
-			zorder=4,
+			ec="tab:green", fc="tab:green", zorder=4,
 		)
 
-		# Rectangle around the component vectors (parallelogram becomes axis-aligned rectangle)
-		Rect_X0 = Xv
-		Rect_Y0 = Yv
-		Rect_W = Dx
-		Rect_H = Dy
-
-		if Rect_W < 0.0:
-			Rect_X0 = Xv + Rect_W
-			Rect_W = -Rect_W
-
-		if Rect_H < 0.0:
-			Rect_Y0 = Yv + Rect_H
-			Rect_H = -Rect_H
+		Rect_X0 = Xv + (Dx if Dx < 0 else 0.0)
+		Rect_Y0 = Yv + (Dy if Dy < 0 else 0.0)
+		Rect_W = abs(Dx)
+		Rect_H = abs(Dy)
 
 		Rect = Rectangle(
 			(Rect_X0, Rect_Y0),
-			Rect_W,
-			Rect_H,
-			fill=False,
-			linewidth=1.8,
+			Rect_W, Rect_H,
+			fill=True,
+			facecolor="0.5",
+			alpha=0.5,
 			edgecolor="0.25",
-			zorder=4,
+			linewidth=1.8,
+			zorder=3,
 		)
 		Ax.add_patch(Rect)
 
@@ -227,7 +200,6 @@ def Make_Circular_Orbit_Forces_Animation(
 		return []
 
 	Anim = FuncAnimation(Fig, Update, frames=Frame_Count, init_func=Init, blit=False)
-
 	Save_Animation_Gif_And_Mp4(Anim, Output_Dir, Name_Base, Fps)
 	Plt.close(Fig)
 
