@@ -31,7 +31,7 @@ def Save_Animation_Gif_And_Mp4(
 
 
 # ------------------------------------------------------------
-# Physics: multi circular orbits in 2D gravity B(R)=G/R
+# Physics: multi circular orbits (2D gravity B(R)=G/R)
 # ------------------------------------------------------------
 
 def Simulate_Multi_Circular_Orbits(
@@ -110,7 +110,7 @@ def Make_Orbit_And_Line_Animation(
 
 	R_Max = max(R_List)
 	T_Orbit_Max = 2.0 * Np.pi * R_Max / V_Orbit
-	T_Total = T_Orbit_Max     # exactly one orbit for R=64
+	T_Total = T_Orbit_Max   # one orbit for R=64
 
 	Step_Count = int(Np.ceil(T_Total / Dt)) + 1
 
@@ -127,25 +127,21 @@ def Make_Orbit_And_Line_Animation(
 	Y_Frame = Y_All[:, Idx]
 
 	Planet_Color_List = [
-		"#9e9e9e",  # Merkur
-		"#d2b48c",  # Venus
-		"#1f77b4",  # Erde
-		"#d62728",  # Mars
-		"#bc7c3a",  # Jupiter
-		"#e6d8a8",  # Saturn
-		"#7fd3ff",  # Uranus
+		"#9e9e9e",
+		"#d2b48c",
+		"#1f77b4",
+		"#d62728",
+		"#bc7c3a",
+		"#e6d8a8",
+		"#7fd3ff",
 	]
-
-	# --------------------------------------------------------
-	# Figure & axes
-	# --------------------------------------------------------
 
 	Fig = Plt.figure(figsize=(14, 7))
 	Grid = Fig.add_gridspec(1, 2, wspace=0.22)
 	Ax_Left = Fig.add_subplot(Grid[0, 0])
 	Ax_Right = Fig.add_subplot(Grid[0, 1])
 
-	# ---------------- Left: circular orbits ----------------
+	# ---------------- Left ----------------
 
 	Limit = R_Max + 12
 	Ax_Left.set_aspect("equal", adjustable="box")
@@ -159,14 +155,9 @@ def Make_Orbit_And_Line_Animation(
 
 	Theta = Np.linspace(0.0, 2.0 * Np.pi, 600)
 	for R in R_List:
-		Ax_Left.plot(
-			R * Np.cos(Theta),
-			R * Np.sin(Theta),
-			alpha=0.12,
-			zorder=1,
-		)
+		Ax_Left.plot(R * Np.cos(Theta), R * Np.sin(Theta), alpha=0.12)
 
-	# ---------------- Right: straight motion ----------------
+	# ---------------- Right ----------------
 
 	Ax_Right.set_title("Gleiche Geschwindigkeit auf Geraden")
 	Ax_Right.set_xlabel("Weg")
@@ -176,13 +167,12 @@ def Make_Orbit_And_Line_Animation(
 	Distance_Total = V_Orbit * T_Total
 	Ax_Right.set_xlim(0.0, Distance_Total * 1.05)
 
-	# constant vertical spacing
-	Y_Pos_List = list(range(len(R_List)))
+	# reversed vertical order: R=1 top, R=64 bottom
+	Y_Pos_List = list(reversed(range(len(R_List))))
 	Ax_Right.set_ylim(-0.6, len(R_List) - 0.4)
 	Ax_Right.set_yticks(Y_Pos_List)
 	Ax_Right.set_yticklabels([str(int(R)) for R in R_List])
 
-	# faint base lines + period markers
 	for I, R in enumerate(R_List):
 		Color = Planet_Color_List[I]
 		Y0 = float(Y_Pos_List[I])
@@ -191,25 +181,16 @@ def Make_Orbit_And_Line_Animation(
 		Cycle_Count = int(Np.floor(T_Total / T_Orbit + 1e-9))
 		Marker_X_List = [(2.0 * Np.pi * R) * K for K in range(Cycle_Count + 1)]
 
-		Ax_Right.hlines(
-			Y0, 0.0, Distance_Total,
-			color=Color, alpha=0.12, linewidth=2, zorder=1
-		)
+		Ax_Right.hlines(Y0, 0.0, Distance_Total, color=Color, alpha=0.12, linewidth=2)
 
 		for K, Xk in enumerate(Marker_X_List):
-			Is_End = (K == 0) or (K == Cycle_Count)
-			Half = 0.26 if Is_End else 0.18
-			Lw = 3 if Is_End else 2
-			Alpha = 0.95 if Is_End else 0.75
+			Half = 0.26 if K in (0, Cycle_Count) else 0.18
+			Lw = 3 if K in (0, Cycle_Count) else 2
+			Alpha = 0.95 if K in (0, Cycle_Count) else 0.75
 
-			Ax_Right.vlines(
-				Xk, Y0 - Half, Y0 + Half,
-				color=Color, linewidth=Lw, alpha=Alpha, zorder=2
-			)
+			Ax_Right.vlines(Xk, Y0 - Half, Y0 + Half, color=Color, linewidth=Lw, alpha=Alpha)
 
-	# --------------------------------------------------------
-	# Artists
-	# --------------------------------------------------------
+	# ---------------- Artists ----------------
 
 	Ball_L, Trail_L = [], []
 	Ball_R, Trail_R = [], []
@@ -218,11 +199,11 @@ def Make_Orbit_And_Line_Animation(
 	for I in range(len(R_List)):
 		Color = Planet_Color_List[I]
 
-		Tl, = Ax_Left.plot([], [], color=Color, alpha=0.6, zorder=3)
-		Bl, = Ax_Left.plot([], [], "o", color=Color, zorder=5)
+		Tl, = Ax_Left.plot([], [], color=Color, alpha=0.6)
+		Bl, = Ax_Left.plot([], [], "o", color=Color)
 
-		Tr, = Ax_Right.plot([], [], color=Color, alpha=0.6, zorder=3)
-		Br, = Ax_Right.plot([], [], "o", color=Color, zorder=5)
+		Tr, = Ax_Right.plot([], [], color=Color, alpha=0.6)
+		Br, = Ax_Right.plot([], [], "o", color=Color)
 
 		Trail_L.append(Tl)
 		Ball_L.append(Bl)
@@ -241,10 +222,6 @@ def Make_Orbit_And_Line_Animation(
 		ha="left",
 		fontsize=11,
 	)
-
-	# --------------------------------------------------------
-	# Animation callbacks
-	# --------------------------------------------------------
 
 	def Init():
 		for I in range(len(R_List)):
@@ -282,13 +259,7 @@ def Make_Orbit_And_Line_Animation(
 
 		return []
 
-	Anim = FuncAnimation(
-		Fig,
-		Update,
-		frames=Frame_Count,
-		init_func=Init,
-		blit=False,
-	)
+	Anim = FuncAnimation(Fig, Update, frames=Frame_Count, init_func=Init, blit=False)
 
 	Save_Animation_Gif_And_Mp4(Anim, Output_Dir, Name_Base, Fps)
 	Plt.close(Fig)
@@ -308,7 +279,7 @@ def Main() -> None:
 		G=64.0,
 		R_List=R_List,
 		Output_Dir=Output_Dir,
-		Name_Base="orbits_vs_lines_constant_spacing",
+		Name_Base="orbits_vs_lines_reversed_order",
 		Time_Scale=2.0,
 	)
 
