@@ -156,7 +156,7 @@ def Make_Circular_Orbit_Animation(
 # ------------------------------------------------------------
 
 def Main() -> None:
-	Output_Dir = Path("021-Circular-Orbit")
+	Output_Dir = Path("030-Circular-Orbit")
 	Output_Dir.mkdir(exist_ok=True)
 
 	Make_Circular_Orbit_Animation(
