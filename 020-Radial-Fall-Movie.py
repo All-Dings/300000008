@@ -128,11 +128,11 @@ def Make_Single_Animation(
 	Ax_Left.set_ylabel("R")
 	Ax_Left.set_title(f"Radial Fall (B(R)=G/R), G={G:g}")
 
-	Center = Ax_Left.scatter([0], [0], s=500, c="yellow", edgecolors="black", zorder=4)
+	Center = Ax_Left.scatter([0], [0], s=500, c="yellow", edgecolors="black", zorder=1)
 
 	Ball_Color = "tab:blue"
 
-	Trail_Left, = Ax_Left.plot([], [], linewidth=2, alpha=0.6, zorder=3)
+	Trail_Left, = Ax_Left.plot([], [], linewidth=2, zorder=4, color="red", linestyle=":")
 	Ball_Left, = Ax_Left.plot(
 		[],
 		[],
@@ -140,7 +140,7 @@ def Make_Single_Animation(
 		markersize=10,
 		linestyle="None",
 		color=Ball_Color,
-		zorder=6,
+		zorder=10,
 	)
 
 	Info_Text = Ax_Left.text(
@@ -172,9 +172,10 @@ def Make_Single_Animation(
 		linewidth=2,
 		label=rf"$B={G:g}\cdot\frac{{1}}{{R}}$",
 		zorder=2,
+		color=Ball_Color
 	)
 
-	Trail_Right, = Ax_Right.plot([], [], linewidth=2, alpha=0.6, zorder=3)
+	Trail_Right, = Ax_Right.plot([], [], linewidth=2, zorder=3, linestyle=":", color="red")
 	Point_Right, = Ax_Right.plot(
 		[],
 		[],
@@ -294,7 +295,7 @@ def Make_Combined_Animation_2x2(
 		Ax_i.scatter([0], [0], s=500, c="yellow", edgecolors="black", zorder=4)
 
 		B, = Ax_i.plot([], [], marker="o", markersize=10, linestyle="None", zorder=6)
-		T, = Ax_i.plot([], [], linewidth=2, alpha=0.6, zorder=3)
+		T, = Ax_i.plot([], [], linewidth=2, zorder=3)
 		Txt = Ax_i.text(0.02, 0.98, "", transform=Ax_i.transAxes, va="top", ha="left")
 
 		Balls.append(B)
@@ -351,7 +352,6 @@ def Main() -> None:
 		Output_Dir=Output_Dir,
 		Name_Base="radial_fall_single_G_64",
 	)
-
 	Make_Combined_Animation_2x2(
 		G_List=[16.0, 32.0, 64.0, 128.0],
 		Output_Dir=Output_Dir,
