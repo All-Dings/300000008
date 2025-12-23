@@ -292,10 +292,10 @@ def Make_Combined_Animation_2x2(
 		Ax_i.set_ylabel("R")
 		Ax_i.set_title(f"G = {G:g}")
 
-		Ax_i.scatter([0], [0], s=500, c="yellow", edgecolors="black", zorder=4)
+		Ax_i.scatter([0], [0], s=500, c="yellow", edgecolors="black", zorder=1)
 
-		B, = Ax_i.plot([], [], marker="o", markersize=10, linestyle="None", zorder=6)
-		T, = Ax_i.plot([], [], linewidth=2, zorder=3)
+		B, = Ax_i.plot([], [], marker="o", markersize=10, linestyle=None, zorder=6)
+		T, = Ax_i.plot([], [], linewidth=2, zorder=3, color="red", linestyle=":")
 		Txt = Ax_i.text(0.02, 0.98, "", transform=Ax_i.transAxes, va="top", ha="left")
 
 		Balls.append(B)
