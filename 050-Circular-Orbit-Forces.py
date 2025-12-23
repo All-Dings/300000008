@@ -4,6 +4,7 @@ import numpy as Np
 import matplotlib
 import matplotlib.pyplot as Plt
 from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
+from matplotlib.patches import Rectangle
 from pathlib import Path
 from typing import Tuple
 
@@ -85,6 +86,7 @@ def Make_Circular_Orbit_Forces_Animation(
 	Arrow_Total = None
 	Arrow_X = None
 	Arrow_Y = None
+	Rect = None
 
 	Info_Text = Fig.text(
 		0.02,
@@ -98,28 +100,35 @@ def Make_Circular_Orbit_Forces_Animation(
 	Trail_X = []
 	Trail_Y = []
 
+	def Remove_Artist(A):
+		if A is None:
+			return
+		try:
+			A.remove()
+		except Exception:
+			pass
+
 	def Init():
-		nonlocal Arrow_Total, Arrow_X, Arrow_Y
+		nonlocal Arrow_Total, Arrow_X, Arrow_Y, Rect
 		Trail_X.clear()
 		Trail_Y.clear()
 		Trail.set_data([], [])
 		Ball.set_data([], [])
 		Info_Text.set_text("")
 
-		for A in (Arrow_Total, Arrow_X, Arrow_Y):
-			if A is not None:
-				try:
-					A.remove()
-				except Exception:
-					pass
+		Remove_Artist(Arrow_Total)
+		Remove_Artist(Arrow_X)
+		Remove_Artist(Arrow_Y)
+		Remove_Artist(Rect)
 
 		Arrow_Total = None
 		Arrow_X = None
 		Arrow_Y = None
+		Rect = None
 		return []
 
 	def Update(I: int):
-		nonlocal Arrow_Total, Arrow_X, Arrow_Y
+		nonlocal Arrow_Total, Arrow_X, Arrow_Y, Rect
 
 		Xv = float(X_Frame[I])
 		Yv = float(Y_Frame[I])
@@ -133,20 +142,21 @@ def Make_Circular_Orbit_Forces_Animation(
 		Trail.set_data(Trail_X, Trail_Y)
 		Ball.set_data([Xv], [Yv])
 
-		for A in (Arrow_Total, Arrow_X, Arrow_Y):
-			if A is not None:
-				try:
-					A.remove()
-				except Exception:
-					pass
+		Remove_Artist(Arrow_Total)
+		Remove_Artist(Arrow_X)
+		Remove_Artist(Arrow_Y)
+		Remove_Artist(Rect)
 
 		Scale = 25.0
+
+		Dx = Scale * Fgx
+		Dy = Scale * Fgy
 
 		Arrow_Total = Ax.arrow(
 			Xv,
 			Yv,
-			Scale * Fgx,
-			Scale * Fgy,
+			Dx,
+			Dy,
 			head_width=2.0,
 			head_length=3.0,
 			length_includes_head=True,
@@ -158,7 +168,7 @@ def Make_Circular_Orbit_Forces_Animation(
 		Arrow_X = Ax.arrow(
 			Xv,
 			Yv,
-			Scale * Fgx,
+			Dx,
 			0.0,
 			head_width=1.5,
 			head_length=2.5,
@@ -172,7 +182,7 @@ def Make_Circular_Orbit_Forces_Animation(
 			Xv,
 			Yv,
 			0.0,
-			Scale * Fgy,
+			Dy,
 			head_width=1.5,
 			head_length=2.5,
 			length_includes_head=True,
@@ -180,6 +190,31 @@ def Make_Circular_Orbit_Forces_Animation(
 			fc="tab:green",
 			zorder=4,
 		)
+
+		# Rectangle around the component vectors (parallelogram becomes axis-aligned rectangle)
+		Rect_X0 = Xv
+		Rect_Y0 = Yv
+		Rect_W = Dx
+		Rect_H = Dy
+
+		if Rect_W < 0.0:
+			Rect_X0 = Xv + Rect_W
+			Rect_W = -Rect_W
+
+		if Rect_H < 0.0:
+			Rect_Y0 = Yv + Rect_H
+			Rect_H = -Rect_H
+
+		Rect = Rectangle(
+			(Rect_X0, Rect_Y0),
+			Rect_W,
+			Rect_H,
+			fill=False,
+			linewidth=1.8,
+			edgecolor="0.25",
+			zorder=4,
+		)
+		Ax.add_patch(Rect)
 
 		Info_Text.set_text(
 			f"Time_Scale = {Time_Scale:g}x\n"
