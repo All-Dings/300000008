@@ -37,7 +37,6 @@ def Gravity_Force_2D(
 	if R <= 0.0:
 		return 0.0, 0.0, 0.0
 
-	# 2D model: |Fg| = G/R and vector points to the center
 	Factor = -G / (R * R)
 	Fx = Factor * X
 	Fy = Factor * Y
@@ -49,16 +48,21 @@ def Make_Circular_Orbit_Forces_Animation(
 	G: float,
 	R_Orbit: float,
 	V: float,
+	Time_Scale: float,
 	Output_Dir: Path,
 	Name_Base: str,
 	Fps: int = 25,
 ) -> None:
 
-	T_Total = (2.0 * Np.pi * R_Orbit) / V
-	Frame_Count = int(Np.ceil(T_Total * Fps)) + 1
+	T_Phys_Total = (2.0 * Np.pi * R_Orbit) / V
+	T_Video_Total = T_Phys_Total / Time_Scale
 
-	T_Frame = Np.arange(Frame_Count, dtype=float) / float(Fps)
-	Theta_Frame = (V / R_Orbit) * T_Frame
+	Frame_Count = int(Np.ceil(T_Video_Total * Fps)) + 1
+
+	T_Video = Np.arange(Frame_Count, dtype=float) / float(Fps)
+	T_Phys = T_Video * Time_Scale
+
+	Theta_Frame = (V / R_Orbit) * T_Phys
 
 	X_Frame = R_Orbit * Np.cos(Theta_Frame)
 	Y_Frame = R_Orbit * Np.sin(Theta_Frame)
@@ -71,22 +75,16 @@ def Make_Circular_Orbit_Forces_Animation(
 	Ax.set_ylim(-Limit, Limit)
 	Ax.set_xlabel("x")
 	Ax.set_ylabel("y")
-	Ax.set_title(f"Kreisbahn (R={R_Orbit:g}, V={V:g}) mit Gravitationskraft-Komponenten")
+	Ax.set_title("Kreisbahn mit Gravitationskraft-Vektoren")
 
-	Center = Ax.scatter([0], [0], s=650, c="yellow", edgecolors="black", zorder=2)
+	Ax.scatter([0], [0], s=650, c="yellow", edgecolors="black", zorder=2)
 
 	Trail, = Ax.plot([], [], linewidth=2, color="red", linestyle=":", zorder=3)
-	Ball, = Ax.plot(
-		[],
-		[],
-		marker="o",
-		markersize=10,
-		linestyle="None",
-		color="tab:blue",
-		zorder=6,
-	)
+	Ball, = Ax.plot([], [], "o", color="tab:blue", markersize=10, zorder=6)
 
-	Force_Arrow = None
+	Arrow_Total = None
+	Arrow_X = None
+	Arrow_Y = None
 
 	Info_Text = Fig.text(
 		0.02,
@@ -97,53 +95,58 @@ def Make_Circular_Orbit_Forces_Animation(
 		fontsize=11,
 	)
 
-	Trail_X_List = []
-	Trail_Y_List = []
+	Trail_X = []
+	Trail_Y = []
 
 	def Init():
-		nonlocal Force_Arrow
-		Trail_X_List.clear()
-		Trail_Y_List.clear()
+		nonlocal Arrow_Total, Arrow_X, Arrow_Y
+		Trail_X.clear()
+		Trail_Y.clear()
 		Trail.set_data([], [])
 		Ball.set_data([], [])
 		Info_Text.set_text("")
 
-		if Force_Arrow is not None:
-			try:
-				Force_Arrow.remove()
-			except Exception:
-				pass
-			Force_Arrow = None
+		for A in (Arrow_Total, Arrow_X, Arrow_Y):
+			if A is not None:
+				try:
+					A.remove()
+				except Exception:
+					pass
 
+		Arrow_Total = None
+		Arrow_X = None
+		Arrow_Y = None
 		return []
 
 	def Update(I: int):
-		nonlocal Force_Arrow
+		nonlocal Arrow_Total, Arrow_X, Arrow_Y
 
 		Xv = float(X_Frame[I])
 		Yv = float(Y_Frame[I])
-		Tv = float(T_Frame[I])
+		Tv = float(T_Phys[I])
 
 		Fg, Fgx, Fgy = Gravity_Force_2D(G, Xv, Yv)
 
-		Trail_X_List.append(Xv)
-		Trail_Y_List.append(Yv)
+		Trail_X.append(Xv)
+		Trail_Y.append(Yv)
 
-		Trail.set_data(Trail_X_List, Trail_Y_List)
+		Trail.set_data(Trail_X, Trail_Y)
 		Ball.set_data([Xv], [Yv])
 
-		if Force_Arrow is not None:
-			try:
-				Force_Arrow.remove()
-			except Exception:
-				pass
+		for A in (Arrow_Total, Arrow_X, Arrow_Y):
+			if A is not None:
+				try:
+					A.remove()
+				except Exception:
+					pass
 
-		Arrow_Scale = 25.0  # visual scale only
-		Force_Arrow = Ax.arrow(
+		Scale = 25.0
+
+		Arrow_Total = Ax.arrow(
 			Xv,
 			Yv,
-			Arrow_Scale * Fgx,
-			Arrow_Scale * Fgy,
+			Scale * Fgx,
+			Scale * Fgy,
 			head_width=2.0,
 			head_length=3.0,
 			length_includes_head=True,
@@ -152,10 +155,35 @@ def Make_Circular_Orbit_Forces_Animation(
 			zorder=5,
 		)
 
+		Arrow_X = Ax.arrow(
+			Xv,
+			Yv,
+			Scale * Fgx,
+			0.0,
+			head_width=1.5,
+			head_length=2.5,
+			length_includes_head=True,
+			ec="tab:red",
+			fc="tab:red",
+			zorder=4,
+		)
+
+		Arrow_Y = Ax.arrow(
+			Xv,
+			Yv,
+			0.0,
+			Scale * Fgy,
+			head_width=1.5,
+			head_length=2.5,
+			length_includes_head=True,
+			ec="tab:green",
+			fc="tab:green",
+			zorder=4,
+		)
+
 		Info_Text.set_text(
-			f"G = {G:g}\n"
-			f"t = {Tv:6.2f} s\n"
-			f"R = {R_Orbit:g}, V = {V:g}\n"
+			f"Time_Scale = {Time_Scale:g}x\n"
+			f"t (phys) = {Tv:6.2f} s\n"
 			f"Fg   = {Fg:8.4f}\n"
 			f"Fg_x = {Fgx:8.4f}\n"
 			f"Fg_y = {Fgy:8.4f}"
@@ -163,13 +191,7 @@ def Make_Circular_Orbit_Forces_Animation(
 
 		return []
 
-	Anim = FuncAnimation(
-		Fig,
-		Update,
-		frames=Frame_Count,
-		init_func=Init,
-		blit=False,
-	)
+	Anim = FuncAnimation(Fig, Update, frames=Frame_Count, init_func=Init, blit=False)
 
 	Save_Animation_Gif_And_Mp4(Anim, Output_Dir, Name_Base, Fps)
 	Plt.close(Fig)
@@ -183,8 +205,9 @@ def Main() -> None:
 		G=64.0,
 		R_Orbit=64.0,
 		V=8.0,
+		Time_Scale=2.0,
 		Output_Dir=Output_Dir,
-		Name_Base="circular_orbit_forces_G_64_R_64_V_8",
+		Name_Base="circular_orbit_forces_timescale_2x",
 		Fps=25,
 	)
 
