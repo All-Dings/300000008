@@ -86,7 +86,7 @@ def Make_Circular_Orbit_Forces_Animation(
 	Ax_Left_Force.set_yticks(Np.arange(-10, 11, 1))
 
 	# Grid: X = space (x-position), Y = force scale
-	Ax_Left.grid(False)
+	Ax_Left.grid(True, axis="x", alpha=0.25)
 	Ax_Left_Force.grid(True, axis="y", alpha=0.35)
 
 
