@@ -255,14 +255,15 @@ def Make_Circular_Orbit_Forces_Animation(
 
 		Info_Text.set_text(
 	""
-	+ f"Time_Scale = {Time_Scale:g}x\n"
-	+ f"t (phys)   = {T_Phys:6.2f} s\n"
-	+ f"t (video)  = {T_Video:6.2f} s\n"
-	+ f"s          = {Sv:6.2f}\n"
-	+ f"φ          = {Angle_Deg:6.1f}°\n"
-	+ f"|Fg|       = {Fg:6.3f}\n"
-	+ f"Fg_x       = {Fgx:6.3f}\n"
-	+ f"Fg_y       = {Fgy:6.3f}")
+	+ f"Time_Scale  = {Time_Scale:g}x\n"
+	+ f"t (phys)    = {T_Phys:6.2f} s\n"
+	+ f"t (video)   = {T_Video:6.2f} s\n"
+	+ f"s           = {Sv:6.2f}\n"
+	+ f"φ           = {Angle_Deg:6.1f}°\n"
+	+ f"Fg_x        = {Fgx:6.3f}\n"
+	+ f"Fg_y        = {Fgy:6.3f}\n"
+	+ f"Fg_x + Fg_y = {Fgx + Fgy:6.3f}\n"
+	+ f"|Fg|        = {Fg:6.3f}")
 
 		return Ball, Arrow_Total, Arrow_X, Arrow_Y, Rect, Line_Fgx, Line_Fgy
 
