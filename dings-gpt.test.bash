@@ -1,86 +1,104 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-Clean_Up=False
+# dings-gpt.import-simulations.bash
+# Batch Import of Simulation Programs into All-Dings (Flat Directory)
+#
+# Usage:
+#   chmod +x ./dings-gpt.import-simulations.bash
+#   ./dings-gpt.import-simulations.bash
+#
+# Env:
+#   DINGS_GPT_BIN=dings-gpt.exe   (default)
+#   ABOUT_FILE=dings-gpt.about   (default)
+#   CLEAN_UP=0|1                 (default 0)
+#   VERBOSE=0|1                  (default 0)
+#
+# Notes:
+# - Options MUST come before the file argument (dings-host style).
+# - Pick START_ID values that do not collide with existing files in the directory.
 
-if ! $Clean_Up; then
-	echo "Clean_Up"
-fi
+DINGS_GPT_BIN="${DINGS_GPT_BIN:-dings-gpt.exe}"
+ABOUT_FILE="${ABOUT_FILE:-dings-gpt.about}"
 
+CLEAN_UP="${CLEAN_UP:-0}"   # 0 = keep results, 1 = remove created files
+VERBOSE="${VERBOSE:-0}"
 
-echo "=== dings-gpt self import ==="
+Run_Import() {
+	local START_ID="$1"
+	local TITLE="$2"
+	local ALIAS_NAME="$3"
+	local FILE_PATH="$4"
+	shift 4
+	local EXTRA_ABOUT_ARGS=()
+	if [[ "$#" -gt 0 ]]; then
+		EXTRA_ABOUT_ARGS=("$@")
+	fi
 
-dings-gpt.exe import text file \
-	-start-id 400007010 \
-	-about-file dings-gpt.about \
-	010-Plot-B-vs-A.py
+	local CMD=("$DINGS_GPT_BIN" import text file "-start-id" "$START_ID" "-about-file" "$ABOUT_FILE" "-title" "$TITLE")
+	if [[ "$VERBOSE" == "1" ]]; then
+		CMD+=("-verbose")
+	fi
+	if [[ "${#EXTRA_ABOUT_ARGS[@]}" -gt 0 ]]; then
+		for A in "${EXTRA_ABOUT_ARGS[@]}"; do
+			CMD+=("-about" "$A")
+		done
+	fi
+	if [[ -n "$ALIAS_NAME" ]]; then
+		CMD+=("-alias" "$ALIAS_NAME")
+	fi
+	CMD+=("$FILE_PATH")
 
-if $Clean_Up; then
-	rm 400007010.*
-	echo "OK: 010-Plot-B-vs-A.py imported"
-fi
+	echo
+	echo "=== Import: $FILE_PATH (START_ID=$START_ID) ==="
+	echo "+ ${CMD[*]}"
+	"${CMD[@]}"
+
+	if [[ -n "$ALIAS_NAME" ]]; then
+		if [[ ! -L "$ALIAS_NAME" ]]; then
+			echo "ERROR: alias '$ALIAS_NAME' was not created"
+			exit 1
+		fi
+		local TARGET
+		TARGET="$(readlink "$ALIAS_NAME")"
+		echo "Alias points to: $TARGET"
+		if [[ "$TARGET" != *.md ]]; then
+			echo "ERROR: alias does not point to *.md"
+			exit 1
+		fi
+	fi
+
+	if [[ "$CLEAN_UP" == "1" ]]; then
+		rm -f "${START_ID}.md" "${START_ID}.py" || true
+		if [[ -n "$ALIAS_NAME" ]]; then
+			rm -f "$ALIAS_NAME" || true
+		fi
+		echo "Cleaned: ${START_ID}.md/.py ${ALIAS_NAME}"
+	fi
+}
+
+# --------------------------------------------------------------------
+# Batch List
+#
+# Each call:
+#   Run_Import START_ID TITLE ALIAS_NAME FILE_PATH [ABOUT_PAIR ...]
+#
+# ABOUT_PAIR syntax examples:
+#   9010000=9010003
+#   611006=[Original.py](400007010)
+#   [Creator](60106)=[GPT](9000150)
+# --------------------------------------------------------------------
+
+Run_Import "400007010" "010-Plot-B-vs-A.py" "" "010-Plot-B-vs-A.py"
+
+Run_Import "400007020" "020-Radial-Fall-Movie.py" "020-Radial-Fall-Movie" "020-Radial-Fall-Movie.py"
+
+Run_Import "400007030" "030-Circular-Orbit.py" "" "030-Circular-Orbit.py"
+
+Run_Import "400007040" "050-Circular-Orbit-Forces-R64_F1.py" "" "050-Circular-Orbit-Forces-R64_F1.py" \
+	"600051=10000000" \
+	"60106=[Chat-GPT-5.2](9000150)" \
+	"60106=0"
 
 echo
-echo "=== alias test ==="
-
-dings-gpt.exe import text file \
-	-start-id 400007020 \
-	-about-file dings-gpt.about \
-	-alias 020-Radial-Fall-Movie \
-	020-Radial-Fall-Movie.py
-
-if [ ! -L 020-Radial-Fall-Movie ]; then
-	echo "ERROR: alias '020-Radial-Fall-Movie' was not created"
-	exit 1
-fi
-
-TARGET="$(readlink 020-Radial-Fall-Movie)"
-echo "Alias points to: $TARGET"
-
-if [[ "$TARGET" != *.md ]]; then
-	echo "ERROR: alias does not point to *.md"
-	exit 1
-fi
-
-if $Clean_Up; then
-	rm 400007020.*
-	rm 020-Radial-Fall-Movie
-fi
-
-echo "OK: alias created correctly"
-
-
-echo
-echo "=== program import without alias ==="
-
-dings-gpt.exe import text file \
-	-start-id 400007030 \
-	-about-file dings-gpt.about \
-	030-Circular-Orbit.py
-
-if $Clean_Up; then
-	rm 400007030.*
-fi
-
-echo "OK: program imported without alias"
-
-
-echo
-echo "=== manual about syntax test ==="
-
-dings-gpt.exe import text file \
-	-start-id 400007040 \
-	-about "600051.md=10000000" \
-	-about "60106=[Chat-GPT-5.2](9000150)" \
-	-about "60106=0" \
-	050-Circular-Orbit-Forces-R64_F1.py
-
-if $Clean_Up; then
-	rm 400007040.*
-fi
-
-echo "OK: manual -about syntax accepted"
-
-echo
-echo "=== ALL TESTS PASSED ==="
-
+echo "=== ALL IMPORTS DONE ==="
