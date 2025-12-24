@@ -244,7 +244,7 @@ def _Help_Import_Text_File() -> None:
 	_Print("  -overwrite: 0|1 (Default: 0) Overwrite Existing Side-Car")
 	_Print("  -about: About Pair, Markdown-Like, Repeatable")
 	_Print("  -about-file: Path To .about Config (Optional)")
-	_Print("  -alias <name>: Create Soft-Link With Explicit Alias Name (Optional)")
+	_Print("  -alias ALIAS_NAME: Create Soft-Link with explicit ALIAS_NAME (Optional)")
 	_Print("")
 	_Print("About Syntax Examples:")
 	_Print("  -about-file GW-010-Plot-B-vs-A.about")
