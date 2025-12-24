@@ -98,6 +98,11 @@ def Make_Circular_Orbit_Forces_Animation(
 	# Earth (Ball)
 	Ball, = Ax_Left.plot([], [], marker="o", markersize=10, linestyle="None", color="tab:blue", zorder=6)
 
+	# Orbit trail
+	Trail_Left, = Ax_Left.plot([], [], linestyle=":", linewidth=2.0, color="tab:blue", alpha=0.6, zorder=2)
+	Trail_X_List: list[float] = []
+	Trail_Y_List: list[float] = []
+
 	Arrow_Total = None
 	Arrow_X = None
 	Arrow_Y = None
@@ -131,6 +136,9 @@ def Make_Circular_Orbit_Forces_Animation(
 
 	def Init():
 		Ball.set_data([], [])
+		Trail_Left.set_data([], [])
+		Trail_X_List.clear()
+		Trail_Y_List.clear()
 		Line_Fgx.set_data([], [])
 		Line_Fgy.set_data([], [])
 		S_List.clear()
@@ -206,6 +214,10 @@ def Make_Circular_Orbit_Forces_Animation(
 				zorder=2,
 			)
 		)
+
+		Trail_X_List.append(Xv)
+		Trail_Y_List.append(Yv)
+		Trail_Left.set_data(Trail_X_List, Trail_Y_List)
 
 		Ball.set_data([Xv], [Yv])
 
