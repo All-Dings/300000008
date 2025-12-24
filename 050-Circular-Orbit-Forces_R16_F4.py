@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Circular Orbit With Force Decomposition (R=16, F_G=4)
+# Circular Orbit with Force Decomposition (R=16, F_G=4)
 # - Left: Space Coordinates x/y ([-20,20]) + Force Axis ([-10,10])
 # - Right: F_Gx(s), F_Gy(s) with matching Force Scale ([-10,10])
 # - One Orbit
@@ -54,7 +54,7 @@ def Make_Circular_Orbit_Forces_Animation(
 	X_Frame = R_Orbit * Np.cos(Theta_Frame)
 	Y_Frame = R_Orbit * Np.sin(Theta_Frame)
 
-	# Path length along orbit
+	# Path length along Orbit
 	S_Frame = R_Orbit * Theta_Frame
 
 	Fig = Plt.figure(figsize=(12, 6))
@@ -79,22 +79,22 @@ def Make_Circular_Orbit_Forces_Animation(
 	Ax_Left.set_xlabel("X")
 	Ax_Left.set_ylabel("Y")
 
-	# Secondary axis: Force scale matching right plot
+	# Secondary Axis: Force Scale matching Right Plot
 	Ax_Left_Force = Ax_Left.twinx()
 	Ax_Left_Force.set_ylim(Force_Min, Force_Max)
 	Ax_Left_Force.set_ylabel("Kraft")
 	Ax_Left_Force.set_yticks(Np.arange(-10, 11, 1))
 
-	# Grid: X = space (x-position), Y = force scale
+	# Grid: X = Space (x-position), Y = Force Scale
 	Ax_Left.grid(True, axis="x", alpha=0.25)
 	Ax_Left_Force.grid(True, axis="y", alpha=0.35)
 
 
-	# Conversion from force-units to space-units so that force axis matches right axis
+	# Conversion from Force-units to Space-units so that Force Axis matches Right Axis
 	Space_Per_Force = (Space_Max - Space_Min) / (Force_Max - Force_Min)  # = 2
 
-	# We keep this at 1.0 so that the force axis labels match the actual values.
-	# (Visual size is still larger because Space_Per_Force = 2.)
+	# We keep this at 1.0 so that the Force Axis labels match the actual Values.
+	# (Visual Size is still larger because Space_Per_Force = 2.)
 	Force_Draw_Scale = 1.0
 
 	# Sun (Center)
@@ -103,7 +103,7 @@ def Make_Circular_Orbit_Forces_Animation(
 	# Earth (Ball)
 	Ball, = Ax_Left.plot([], [], marker="o", markersize=10, linestyle="None", color="tab:blue", zorder=6)
 
-	# Orbit trail
+	# Orbit Trail
 	Trail_Left, = Ax_Left.plot([], [], linestyle=":", linewidth=2.0, color="tab:blue", alpha=0.6, zorder=2)
 	Trail_X_List: list[float] = []
 	Trail_Y_List: list[float] = []
@@ -114,7 +114,7 @@ def Make_Circular_Orbit_Forces_Animation(
 	Rect = None
 
 	# ------------------------------------------------------------
-	# Right: Force Components Over Path
+	# Right: Force Components over Path
 	# ------------------------------------------------------------
 
 	Ax_Right.set_title("Kraftkomponenten über Weg")
@@ -247,7 +247,7 @@ def Make_Circular_Orbit_Forces_Animation(
 		Line_FG_X.set_data(S_List, FG_X_List)
 		Line_FG_Y.set_data(S_List, FG_Y_List)
 
-		# Time: show physical time and video time scaling
+		# Time: show physical Time and Video Time scaling
 		T_Phys = float(T_Phys_Frame[Frame_Index])
 		T_Video = float(T_Phys / Time_Scale)
 
