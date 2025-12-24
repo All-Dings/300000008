@@ -13,8 +13,8 @@ def _Print(Line: str = "") -> None:
 	print(Line)
 
 
-def _Die(Message: str, Exit_Code: int = 2) -> None:
-	raise SystemExit(f"{Message}")
+def _Die(Message: str) -> None:
+	raise SystemExit(Message)
 
 
 def _Is_Option(Token: str) -> bool:
@@ -40,6 +40,8 @@ def _Parse_Options(
 	Options: Dict[str, Optional[str]] = {}
 	Rest: List[str] = []
 	Index = 0
+	Allowed_Lower = [O.lower() for O in Option_Name_List]
+
 	while Index < len(Arg_List):
 		Token = Arg_List[Index]
 		if not _Is_Option(Token):
@@ -58,8 +60,7 @@ def _Parse_Options(
 			Index += 1
 			continue
 
-		Allowed = [O.lower() for O in Option_Name_List]
-		if Name_Lower not in Allowed:
+		if Name_Lower not in Allowed_Lower:
 			_Die(f"Unknown Option: {Token!r}")
 
 		if Index + 1 >= len(Arg_List):
@@ -114,7 +115,7 @@ def _Copy_Move_Link(Source_Path: Path, Target_Path: Path, Mode: str, Verbose: bo
 		_Die(f"Unknown Mode: {Mode!r}. Expected: copy, move, link")
 
 
-def _Sidecar_Create_Video_Md(
+def _Sidecar_Create_Text_Md(
 	Title: str,
 	Dings_Id: int,
 	Creator_Id: int,
@@ -123,9 +124,9 @@ def _Sidecar_Create_Video_Md(
 	Data_Ext = Path(Data_File_Name).suffix
 	return (
 		f"# {Title}\n\n"
-		f"I am a [Video](200300000.md).\n\n"
+		f"I am a [Text](200200000.md).\n\n"
 		f"## About\n\n"
-		f"- My [Creator](60106.md) is [WG-Circular-Orbit-Forces_R16_F4.py]({Creator_Id}.md).\n\n"
+		f"- My [Creator](60106.md) is [{Creator_Id}.md]({Creator_Id}.md).\n\n"
 		f"## Data\n\n"
 		f"![]({Dings_Id}{Data_Ext})\n"
 	)
@@ -141,26 +142,39 @@ def _Help_Top() -> None:
 	_Print("  -verbose: Print verbose Messages")
 	_Print("")
 	_Print("Commands:")
-	_Print("   Sidecar: Work with Side-Car-Files")
+	_Print("   Import: Import Data")
 
 
-def _Help_Sidecar() -> None:
-	_Print("Dings-Gpt Sidecar [COMMAND]")
+def _Help_Import() -> None:
+	_Print("Dings-Gpt Import [COMMAND]")
 	_Print("")
-	_Print("Work with Side-Car-Files")
+	_Print("Import Data")
 	_Print("")
 	_Print("Options:")
 	_Print("  -help: Print Description of Command")
 	_Print("  -verbose: Print verbose Messages")
 	_Print("")
 	_Print("Commands:")
-	_Print("   Create: Create Side-Car-File for a Data-File")
+	_Print("   Text: Import Text")
 
 
-def _Help_Sidecar_Create() -> None:
-	_Print("Dings-Gpt Sidecar Create [COMMAND]")
+def _Help_Import_Text() -> None:
+	_Print("Dings-Gpt Import Text [COMMAND]")
 	_Print("")
-	_Print("Create Side-Car-File for a Data-File")
+	_Print("Import Text")
+	_Print("")
+	_Print("Options:")
+	_Print("  -help: Print Description of Command")
+	_Print("  -verbose: Print verbose Messages")
+	_Print("")
+	_Print("Commands:")
+	_Print("   File: Import Text File")
+
+
+def _Help_Import_Text_File() -> None:
+	_Print("Dings-Gpt Import Text File [COMMAND]")
+	_Print("")
+	_Print("Import Text File And Create Side-Car")
 	_Print("")
 	_Print("Options:")
 	_Print("  -help: Print Description of Command")
@@ -172,10 +186,10 @@ def _Help_Sidecar_Create() -> None:
 	_Print("  -overwrite: 0|1 (Default: 0) Overwrite Existing Side-Car")
 	_Print("")
 	_Print("Args:")
-	_Print("  <file>: Path To Data-File (e.g. .mp4)")
+	_Print("  <file>: Path To Text File")
 
 
-def _Cmd_Sidecar_Create(Arg_List: List[str]) -> None:
+def _Cmd_Import_Text_File(Arg_List: List[str]) -> None:
 	Options, Rest = _Parse_Options(
 		Arg_List,
 		Option_Name_List=["start-id", "creator", "mode", "title", "overwrite"],
@@ -183,7 +197,7 @@ def _Cmd_Sidecar_Create(Arg_List: List[str]) -> None:
 
 	Verbose = "verbose" in Options
 	if "help" in Options or not Rest:
-		_Help_Sidecar_Create()
+		_Help_Import_Text_File()
 		return
 
 	Start_Id_Str = Options.get("start-id")
@@ -214,7 +228,7 @@ def _Cmd_Sidecar_Create(Arg_List: List[str]) -> None:
 	_Copy_Move_Link(Source_Path, Target_Data_Path, Mode=Mode, Verbose=Verbose)
 
 	Title_Final = Title if Title else Source_Path.name
-	Md_Text = _Sidecar_Create_Video_Md(
+	Md_Text = _Sidecar_Create_Text_Md(
 		Title=Title_Final,
 		Dings_Id=Next_Id,
 		Creator_Id=Creator_Id,
@@ -242,19 +256,27 @@ def Main() -> None:
 		_Help_Top()
 		return
 
-	Top_Command = _Match_Command(Rest[0], ["Sidecar"])
+	Top_Command = _Match_Command(Rest[0], ["Import"])
 	Sub_Arg_List = Rest[1:]
 
-	if Top_Command == "Sidecar":
+	if Top_Command == "Import":
 		Sub_Options, Sub_Rest = _Parse_Options(Sub_Arg_List, Option_Name_List=[])
 		if "help" in Sub_Options or not Sub_Rest:
-			_Help_Sidecar()
+			_Help_Import()
 			return
-		Sub_Command = _Match_Command(Sub_Rest[0], ["Create"])
-		Leaf_Arg_List = Sub_Rest[1:]
-		if Sub_Command == "Create":
-			_Cmd_Sidecar_Create(Leaf_Arg_List)
-			return
+		Sub_Command = _Match_Command(Sub_Rest[0], ["Text"])
+		Sub2_Arg_List = Sub_Rest[1:]
+
+		if Sub_Command == "Text":
+			Sub2_Options, Sub2_Rest = _Parse_Options(Sub2_Arg_List, Option_Name_List=[])
+			if "help" in Sub2_Options or not Sub2_Rest:
+				_Help_Import_Text()
+				return
+			Leaf_Command = _Match_Command(Sub2_Rest[0], ["File"])
+			Leaf_Arg_List = Sub2_Rest[1:]
+			if Leaf_Command == "File":
+				_Cmd_Import_Text_File(Leaf_Arg_List)
+				return
 
 	_Die("Unhandled Command")
 
