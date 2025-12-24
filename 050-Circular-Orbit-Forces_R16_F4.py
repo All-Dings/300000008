@@ -43,6 +43,12 @@ def Make_Circular_Orbit_Forces_Animation(
 	Ax_L.set_title("Kreisbahn und Kraftzerlegung")
 	Ax_L.set_xlabel("x")
 	Ax_L.set_ylabel("y")
+	# Secondary axes for force scale (visual)
+	Ax_L_Force = Ax_L.twinx()
+	Ax_L_Force.set_ylim(-11, 11)
+	Ax_L_Force.set_ylabel("Kraft (skaliert, ×2)", color="black")
+	Ax_L_Force.tick_params(axis="y", labelcolor="black")
+
 
 	Ax_L.scatter([0], [0], s=600, c="gold", edgecolors="black", zorder=3)
 	Ball, = Ax_L.plot([], [], "o", color="tab:blue", markersize=10, zorder=5)
