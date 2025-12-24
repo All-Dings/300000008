@@ -5,24 +5,61 @@ set -euo pipefail
 # Batch Import of Simulation Programs into All-Dings (Flat Directory)
 #
 # Usage:
-#   chmod +x ./dings-gpt.import-simulations.bash
-#   ./dings-gpt.import-simulations.bash
+#   ./dings-gpt.import-simulations.bash [OPTIONS]
 #
-# Env:
-#   DINGS_GPT_BIN=dings-gpt.exe   (default)
-#   ABOUT_FILE=dings-gpt.about   (default)
-#   CLEAN_UP=0|1                 (default 0)
-#   VERBOSE=0|1                  (default 0)
+# Options:
+#   -bin DINGS_GPT_BIN   Path To dings-gpt Binary (Default: dings-gpt)
+#   -about ABOUT_FILE   Path To .about File (Default: dings-gpt.about)
+#   -cleanup 0|1        Remove Created Files After Import (Default: 0)
+#   -verbose 0|1        Enable Verbose Mode (Default: 0)
+#   -help               Show This Help
+#
+# Env (fallbacks):
+#   DINGS_GPT_BIN, ABOUT_FILE, CLEAN_UP, VERBOSE
 #
 # Notes:
 # - Options MUST come before the file argument (dings-host style).
-# - Pick START_ID values that do not collide with existing files in the directory.
+# - Pick START_ID values that do not collide with existing files.
 
 DINGS_GPT_BIN="${DINGS_GPT_BIN:-dings-gpt.exe}"
 ABOUT_FILE="${ABOUT_FILE:-dings-gpt.about}"
-
-CLEAN_UP="${CLEAN_UP:-0}"   # 0 = keep results, 1 = remove created files
+CLEAN_UP="${CLEAN_UP:-0}"
 VERBOSE="${VERBOSE:-0}"
+
+_Show_Help() {
+	grep '^#' "$0" | sed 's/^# //'
+	exit 0
+}
+
+# ------------------------------------------------------------
+# Parse CLI Options
+# ------------------------------------------------------------
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+		-help|-h)
+			_Show_Help
+			;;
+		-bin)
+			DINGS_GPT_BIN="$2"
+			shift 2
+			;;
+		-about)
+			ABOUT_FILE="$2"
+			shift 2
+			;;
+		-cleanup)
+			CLEAN_UP="$2"
+			shift 2
+			;;
+		-verbose)
+			VERBOSE="$2"
+			shift 2
+			;;
+		*)
+			break
+			;;
+	esac
+done
 
 Run_Import() {
 	local START_ID="$1"
@@ -30,6 +67,7 @@ Run_Import() {
 	local ALIAS_NAME="$3"
 	local FILE_PATH="$4"
 	shift 4
+
 	local EXTRA_ABOUT_ARGS=()
 	if [[ "$#" -gt 0 ]]; then
 		EXTRA_ABOUT_ARGS=("$@")
@@ -79,26 +117,15 @@ Run_Import() {
 
 # --------------------------------------------------------------------
 # Batch List
-#
-# Each call:
-#   Run_Import START_ID TITLE ALIAS_NAME FILE_PATH [ABOUT_PAIR ...]
-#
-# ABOUT_PAIR syntax examples:
-#   9010000=9010003
-#   611006=[Original.py](400007010)
-#   [Creator](60106)=[GPT](9000150)
 # --------------------------------------------------------------------
 
 Run_Import "400007010" "010-Plot-B-vs-A.py" "" "010-Plot-B-vs-A.py"
-
 Run_Import "400007020" "020-Radial-Fall-Movie.py" "020-Radial-Fall-Movie" "020-Radial-Fall-Movie.py"
-
 Run_Import "400007030" "030-Circular-Orbit.py" "" "030-Circular-Orbit.py"
-
 Run_Import "400007040" "050-Circular-Orbit-Forces-R64_F1.py" "" "050-Circular-Orbit-Forces-R64_F1.py" \
-	"600051=10000000" \
-	"60106=[Chat-GPT-5.2](9000150)" \
-	"60106=0"
+       "600051=10000000" \
+       "60106=[Chat-GPT-5.2](9000150)" \
+       60106=0
 
 echo
 echo "=== ALL IMPORTS DONE ==="
