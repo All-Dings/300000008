@@ -1,3 +1,5 @@
+#!/bin/bash
+
 python3 dings-gpt.py import text file -start-id 300030100 -about-file dings-gpt.about dings-gpt.py
 exit
 python3 dings-gpt.py import text file -start-id 7 -about-file xxx.about -alias dings-gpt dings-gpt.py
