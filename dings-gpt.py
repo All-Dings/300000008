@@ -141,17 +141,23 @@ def _Load_Dings_Name_Map(Index_Path: Path) -> Dict[int, str]:
 	return Map
 
 
-_MD_SIDE_RE = re.compile(r"^\[(?P<Name>[^\]]+)\]\((?P<Id>\d+)\)$")
+def _Normalize_Id_Token(Token: str) -> str:
+	Token = Token.strip()
+	if Token.lower().endswith(".md"):
+		Token = Token[:-3]
+	return Token.strip()
 
 
+_MD_SIDE_RE = re.compile(r"^\[(?P<Name>[^\]]+)\]\((?P<Id>\d+)(?:\.md)?\)$")
 def _Parse_About_Side(Token: str) -> Tuple[int, Optional[str]]:
 	Token = Token.strip()
 	Match = _MD_SIDE_RE.match(Token)
 	if Match:
 		return int(Match.group("Id")), Match.group("Name").strip()
 
-	if Token.isdigit():
-		return int(Token), None
+	Token_N = _Normalize_Id_Token(Token)
+	if Token_N.isdigit():
+		return int(Token_N), None
 
 	_Die(f"Invalid -about Side: {Token!r}")
 	return 0, None
@@ -237,8 +243,10 @@ def _Help_Import_Text_File() -> None:
 	_Print("  -title: Title For Side-Car Markdown (Default: Original File-Name)")
 	_Print("  -overwrite: 0|1 (Default: 0) Overwrite Existing Side-Car")
 	_Print("  -about: About Pair, Markdown-Like, Repeatable")
+	_Print("  -about-file: Path To .about Config (Optional)")
 	_Print("")
 	_Print("About Syntax Examples:")
+	_Print("  -about-file GW-010-Plot-B-vs-A.about")
 	_Print("  -about [Creator](60106)=[GPT](9000150)")
 	_Print("  -about [Creator](60106)=9000150")
 	_Print("  -about 60106=9000150")
@@ -255,10 +263,26 @@ def _Write_Text(File_Path: Path, Text: str, Overwrite: bool, Verbose: bool) -> N
 		_Print(f"Written: {File_Path}")
 
 
+def _Load_About_File(About_Path: Path) -> List[str]:
+	Line_List: List[str] = []
+	if not About_Path.exists():
+		_Die(f"About-File Not Found: {About_Path}")
+	try:
+		Text = About_Path.read_text(encoding="utf-8", errors="replace")
+	except OSError as Exc:
+		_Die(f"Could Not Read About-File: {About_Path} ({Exc})")
+	for Line in Text.splitlines():
+		Line = Line.strip()
+		if not Line or Line.startswith("#"):
+			continue
+		Line_List.append(Line)
+	return Line_List
+
+
 def _Cmd_Import_Text_File(Arg_List: List[str]) -> None:
 	Options, Rest = _Parse_Options(
 		Arg_List,
-		Option_Name_List=["start-id", "creator", "mode", "title", "overwrite", "about"],
+		Option_Name_List=["start-id", "creator", "mode", "title", "overwrite", "about", "about-file"],
 	)
 
 	Verbose = "verbose" in Options
@@ -340,7 +364,24 @@ def _Cmd_Import_Text_File(Arg_List: List[str]) -> None:
 				)
 			)
 
-		# Manual About Pairs
+		# About From Config File (.about)
+		About_File_Opt = Options.get("about-file")
+		if isinstance(About_File_Opt, str) and About_File_Opt:
+			About_Path = Path(About_File_Opt)
+			if About_Path.suffix == "":
+				About_Path = About_Path.with_suffix(".about")
+			for Pair_Str in _Load_About_File(About_Path):
+				Attr_Id, Attr_Name_Override, Val_Id, Val_Name_Override = _Parse_About_Pair(Pair_Str)
+				About_Line_List.append(
+					_Render_About_Line(
+						Attr_Id=Attr_Id,
+						Attr_Name=_Name_For(Attr_Id, Attr_Name_Override),
+						Value_Id=Val_Id,
+						Value_Name=_Name_For(Val_Id, Val_Name_Override),
+					)
+				)
+
+		# Manual About Pairs (CLI Overrides Config)
 		About_Opt = Options.get("about")
 		if isinstance(About_Opt, list):
 			for Pair_Str in About_Opt:
