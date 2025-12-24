@@ -255,9 +255,9 @@ def Make_Circular_Orbit_Forces_Animation(
 
 		Info_Text.set_text(
 	""
-	+ f"T_Scale     = {Time_Scale: 6.2f} ×\n"
-	+ f"T_Phys      = {T_Phys:6.2f} T_Sek\n"
-	+ f"T_Video     = {T_Video:6.2f} T_Sek\n"
+	+ f"T_Scale     = {Time_Scale:+6.2f} ×\n"
+	+ f"T_Phys      = {T_Phys:6.2f} Sek\n"
+	+ f"T_Video     = {T_Video:6.2f} Sek\n"
 	+ f"L_Weg       = {Sv:6.2f} L_EH\n"
 	+ f"Winkel      = {Angle_Deg:6.2f} Grad\n"
 	+ f"FG_X        = {FG_X:+6.2f} F_EH\n"
