@@ -254,16 +254,16 @@ def Make_Circular_Orbit_Forces_Animation(
 		Angle_Deg = (Theta_Frame[Frame_Index] * 180.0 / Np.pi) % 360.0
 
 		Info_Text.set_text(
-	""
-	+ f"T_Scale     = {Time_Scale:+6.2f} ×\n"
-	+ f"T_Phys      = {T_Phys:6.2f} Sek\n"
-	+ f"T_Video     = {T_Video:6.2f} Sek\n"
-	+ f"L_Weg       = {Sv:6.2f} L_EH\n"
-	+ f"Winkel      = {Angle_Deg:6.2f} Grad\n"
-	+ f"FG_X        = {FG_X:+6.2f} F_EH\n"
-	+ f"FG_Y        = {FG_Y:+6.2f} F_EH\n"
-	+ f"FG_X + FG_Y = {FG_X + FG_Y:+6.2f} F_EH\n"
-	+ f"|FG|        = {FG:6.2f} F_EH")
+			""
+			+ f"T_Scale     = {Time_Scale:+6.2f} ×\n"
+			+ f"T_Phys      = {T_Phys:6.2f} Sek\n"
+			+ f"T_Video     = {T_Video:6.2f} Sek\n"
+			+ f"L_Weg       = {Sv:6.2f} L_EH\n"
+			+ f"Winkel      = {Angle_Deg:6.2f} Grad\n"
+			+ f"FG_X        = {FG_X:+6.2f} F_EH\n"
+			+ f"FG_Y        = {FG_Y:+6.2f} F_EH\n"
+			+ f"SUM(FG_X,Y) = {FG_X + FG_Y:+6.2f} F_EH\n"
+			+ f"|FG|        = {FG:6.2f} F_EH")
 
 		return Ball, Arrow_Total, Arrow_X, Arrow_Y, Rect, Line_FG_X, Line_FG_Y
 
