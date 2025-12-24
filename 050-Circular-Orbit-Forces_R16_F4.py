@@ -76,8 +76,8 @@ def Make_Circular_Orbit_Forces_Animation(
 	Ax_Left.set_xlim(Space_Min, Space_Max)
 	Ax_Left.set_ylim(Space_Min, Space_Max)
 	Ax_Left.set_title("Kreisbahn und Kraftzerlegung")
-	Ax_Left.set_xlabel("x")
-	Ax_Left.set_ylabel("y")
+	Ax_Left.set_xlabel("X")
+	Ax_Left.set_ylabel("Y")
 
 	# Secondary axis: Force scale matching right plot
 	Ax_Left_Force = Ax_Left.twinx()
@@ -118,20 +118,20 @@ def Make_Circular_Orbit_Forces_Animation(
 	# ------------------------------------------------------------
 
 	Ax_Right.set_title("Kraftkomponenten über Weg")
-	Ax_Right.set_xlabel("Weg s")
+	Ax_Right.set_xlabel("S_Weg")
 	Ax_Right.set_ylabel("Kraft")
 	Ax_Right.set_xlim(0.0, float(2.0 * Np.pi * R_Orbit))
 	Ax_Right.set_ylim(Force_Min, Force_Max)
 	Ax_Right.set_yticks(Np.arange(-10, 11, 1))
 	Ax_Right.grid(True, alpha=0.3)
 
-	Line_Fgx, = Ax_Right.plot([], [], color="green", linewidth=2, label="F_Gx")
-	Line_Fgy, = Ax_Right.plot([], [], color="red", linewidth=2, label="F_Gy")
+	Line_FG_X, = Ax_Right.plot([], [], color="green", linewidth=2, label="FG_X")
+	Line_FG_Y, = Ax_Right.plot([], [], color="red", linewidth=2, label="FG_Y")
 	Ax_Right.legend(loc="upper right")
 
 	S_List: list[float] = []
-	Fgx_List: list[float] = []
-	Fgy_List: list[float] = []
+	FG_X_List: list[float] = []
+	FG_Y_List: list[float] = []
 
 	Info_Text = Fig.text(
 	0.02,
@@ -158,12 +158,12 @@ def Make_Circular_Orbit_Forces_Animation(
 		Trail_Left.set_data([], [])
 		Trail_X_List.clear()
 		Trail_Y_List.clear()
-		Line_Fgx.set_data([], [])
-		Line_Fgy.set_data([], [])
+		Line_FG_X.set_data([], [])
+		Line_FG_Y.set_data([], [])
 		S_List.clear()
-		Fgx_List.clear()
-		Fgy_List.clear()
-		return Ball, Line_Fgx, Line_Fgy
+		FG_X_List.clear()
+		FG_Y_List.clear()
+		return Ball, Line_FG_X, Line_FG_Y
 
 	def Update(Frame_Index: int):
 		nonlocal Arrow_Total, Arrow_X, Arrow_Y, Rect
@@ -172,11 +172,11 @@ def Make_Circular_Orbit_Forces_Animation(
 		Yv = float(Y_Frame[Frame_Index])
 		Sv = float(S_Frame[Frame_Index])
 
-		Fg, Fgx, Fgy = Gravity_Force_2D(G, Xv, Yv)
+		FG, FG_X, FG_Y = Gravity_Force_2D(G, Xv, Yv)
 
 		# Convert force components to space-units for drawing
-		Dx = Space_Per_Force * Force_Draw_Scale * Fgx
-		Dy = Space_Per_Force * Force_Draw_Scale * Fgy
+		Dx = Space_Per_Force * Force_Draw_Scale * FG_X
+		Dy = Space_Per_Force * Force_Draw_Scale * FG_Y
 
 		Remove(Arrow_Total)
 		Remove(Arrow_X)
@@ -241,11 +241,11 @@ def Make_Circular_Orbit_Forces_Animation(
 		Ball.set_data([Xv], [Yv])
 
 		S_List.append(Sv)
-		Fgx_List.append(Fgx)
-		Fgy_List.append(Fgy)
+		FG_X_List.append(FG_X)
+		FG_Y_List.append(FG_Y)
 
-		Line_Fgx.set_data(S_List, Fgx_List)
-		Line_Fgy.set_data(S_List, Fgy_List)
+		Line_FG_X.set_data(S_List, FG_X_List)
+		Line_FG_Y.set_data(S_List, FG_Y_List)
 
 		# Time: show physical time and video time scaling
 		T_Phys = float(T_Phys_Frame[Frame_Index])
@@ -256,16 +256,16 @@ def Make_Circular_Orbit_Forces_Animation(
 		Info_Text.set_text(
 	""
 	+ f"Time_Scale  = {Time_Scale: 6.2f}\n"
-	+ f"t (phys)    = {T_Phys:6.2f}s\n"
-	+ f"t (video)   = {T_Video:6.2f}s\n"
-	+ f"s           = {Sv:6.2f}\n"
+	+ f"T_Phys      = {T_Phys:6.2f}s\n"
+	+ f"T_Video     = {T_Video:6.2f}s\n"
+	+ f"S_Weg       = {Sv:6.2f}\n"
 	+ f"φ           = {Angle_Deg:6.2f}°\n"
-	+ f"Fg_x        = {Fgx:+6.2f}\n"
-	+ f"Fg_y        = {Fgy:+6.2f}\n"
-	+ f"Fg_x + Fg_y = {Fgx + Fgy:+6.2f}\n"
-	+ f"|Fg|        = {Fg:6.2f}")
+	+ f"FG_X        = {FG_X:+6.2f}\n"
+	+ f"FG_Y        = {FG_Y:+6.2f}\n"
+	+ f"FG_X + FG_Y = {FG_X + FG_Y:+6.2f}\n"
+	+ f"|FG|        = {FG:6.2f}")
 
-		return Ball, Arrow_Total, Arrow_X, Arrow_Y, Rect, Line_Fgx, Line_Fgy
+		return Ball, Arrow_Total, Arrow_X, Arrow_Y, Rect, Line_FG_X, Line_FG_Y
 
 	Anim = FuncAnimation(Fig, Update, frames=Frame_Count, init_func=Init, blit=False)
 
