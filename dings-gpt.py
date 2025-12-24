@@ -6,7 +6,8 @@
 import shutil
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
+import re
 
 
 def _Print(Line: str = "") -> None:
@@ -36,8 +37,12 @@ def _Match_Command(Token: str, Command_List: List[str]) -> str:
 def _Parse_Options(
 	Arg_List: List[str],
 	Option_Name_List: List[str],
-) -> Tuple[Dict[str, Optional[str]], List[str]]:
-	Options: Dict[str, Optional[str]] = {}
+) -> Tuple[Dict[str, Union[None, str, List[str]]], List[str]]:
+	"""
+	Parsing Rule: Options Must Come Before Positional Args.
+	Exception: -about can occur multiple times and is collected into a List.
+	"""
+	Options: Dict[str, Union[None, str, List[str]]] = {}
 	Rest: List[str] = []
 	Index = 0
 	Allowed_Lower = [O.lower() for O in Option_Name_List]
@@ -48,29 +53,37 @@ def _Parse_Options(
 			Rest = Arg_List[Index:]
 			break
 
-		Name = Token.lstrip("-")
-		Name_Lower = Name.lower()
+		Name = Token.lstrip("-").lower()
 
-		if Name_Lower in ("h", "help"):
+		if Name in ("h", "help"):
 			Options["help"] = None
 			Index += 1
 			continue
-		if Name_Lower in ("v", "verbose"):
+		if Name in ("v", "verbose"):
 			Options["verbose"] = None
 			Index += 1
 			continue
 
-		if Name_Lower not in Allowed_Lower:
-			_Die(f"Unknown Option: {Token!r}")
+		if Name not in Allowed_Lower:
+			_Die(f"Unknown Option: -{Name}")
 
 		if Index + 1 >= len(Arg_List):
-			_Die(f"Missing Value For Option: {Token!r}")
+			_Die(f"Missing Value For Option: -{Name}")
 
 		Value = Arg_List[Index + 1]
 		if _Is_Option(Value):
-			_Die(f"Missing Value For Option: {Token!r}")
+			_Die(f"Missing Value For Option: -{Name}")
 
-		Options[Name_Lower] = Value
+		if Name == "about":
+			Existing = Options.get("about")
+			if Existing is None or isinstance(Existing, str):
+				Options["about"] = [Value]
+			else:
+				Existing.append(Value)
+			Index += 2
+			continue
+
+		Options[Name] = Value
 		Index += 2
 
 	return Options, Rest
@@ -87,65 +100,87 @@ def _Find_Next_Free_Id(Start_Id: int, Directory: Path) -> int:
 	return Current
 
 
-def _Write_Text(File_Path: Path, Text: str, Overwrite: bool, Verbose: bool) -> None:
-	if File_Path.exists() and not Overwrite:
-		_Die(f"Refusing To Overwrite Existing File: {File_Path}")
-	File_Path.write_text(Text, encoding="utf-8")
-	if Verbose:
-		_Print(f"Written: {File_Path}")
-
-
-def _Copy_Move_Link(Source_Path: Path, Target_Path: Path, Mode: str, Verbose: bool) -> None:
-	if Target_Path.exists():
-		_Die(f"Target Already Exists: {Target_Path}")
-
+def _Copy_Move_Link(Source: Path, Target: Path, Mode: str) -> None:
+	if Target.exists():
+		_Die(f"Target Already Exists: {Target}")
 	if Mode == "copy":
-		shutil.copy2(Source_Path, Target_Path)
-		if Verbose:
-			_Print(f"Copied: {Source_Path} -> {Target_Path}")
+		shutil.copy2(Source, Target)
 	elif Mode == "move":
-		shutil.move(str(Source_Path), str(Target_Path))
-		if Verbose:
-			_Print(f"Moved: {Source_Path} -> {Target_Path}")
+		shutil.move(str(Source), str(Target))
 	elif Mode == "link":
-		Target_Path.symlink_to(Source_Path.resolve())
-		if Verbose:
-			_Print(f"Linked: {Target_Path} -> {Source_Path.resolve()}")
+		Target.symlink_to(Source.resolve())
 	else:
-		_Die(f"Unknown Mode: {Mode!r}. Expected: copy, move, link")
+		_Die(f"Unknown Mode: {Mode}")
 
 
-def _Sidecar_Create_Program_Md(
-	Title: str,
-	Dings_Id: int,
-	Original_Name: str,
-) -> str:
+def _Load_Dings_Name_Map(Index_Path: Path) -> Dict[int, str]:
+	Map: Dict[int, str] = {}
+	if not Index_Path.exists():
+		return Map
+
+	try:
+		Text = Index_Path.read_text(encoding="utf-8", errors="replace")
+	except OSError:
+		return Map
+
+	for Line in Text.splitlines():
+		Line = Line.strip()
+		if not Line or Line.startswith("#"):
+			continue
+		Parts = Line.split(None, 1)
+		if not Parts:
+			continue
+		Id_Part = Parts[0]
+		Name_Part = Parts[1].strip() if len(Parts) > 1 else ""
+		Id_Part = Id_Part.split(".", 1)[0]
+		if not Id_Part.isdigit():
+			continue
+		Id_Int = int(Id_Part)
+		if Name_Part:
+			Map[Id_Int] = Name_Part
+	return Map
+
+
+_MD_SIDE_RE = re.compile(r"^\[(?P<Name>[^\]]+)\]\((?P<Id>\d+)\)$")
+
+
+def _Parse_About_Side(Token: str) -> Tuple[int, Optional[str]]:
+	Token = Token.strip()
+	Match = _MD_SIDE_RE.match(Token)
+	if Match:
+		return int(Match.group("Id")), Match.group("Name").strip()
+
+	if Token.isdigit():
+		return int(Token), None
+
+	_Die(f"Invalid -about Side: {Token!r}")
+	return 0, None
+
+
+def _Parse_About_Pair(Token: str) -> Tuple[int, Optional[str], int, Optional[str]]:
+	Token = Token.strip()
+	if "=" not in Token:
+		_Die(f"Invalid -about Pair (Missing '='): {Token!r}")
+
+	Left, Right = Token.split("=", 1)
+	Attr_Id, Attr_Name = _Parse_About_Side(Left.strip())
+	Val_Id, Val_Name = _Parse_About_Side(Right.strip())
+	return Attr_Id, Attr_Name, Val_Id, Val_Name
+
+
+def _Render_About_Line(Attr_Id: int, Attr_Name: str, Value_Id: int, Value_Name: str) -> str:
+	return f"- My [{Attr_Name}]({Attr_Id}.md) is [{Value_Name}]({Value_Id}.md)."
+
+
+def _Sidecar_Program_Md(Title: str, Dings_Id: int, About_Line_List: List[str]) -> str:
+	About_Text = "\n".join(About_Line_List)
 	return (
 		f"# {Title}\n\n"
+		f"I am a [Program](60086.md).\n\n"
 		f"## About\n\n"
-		f"- My [Programming-Language](9010000.md) is [Python](9010003.md).\n"
-		f"- My [Original-Name](611006.md) is [{Original_Name}]({Dings_Id}.md)\n\n"
+		f"{About_Text}\n\n"
 		f"## Data\n\n"
 		f"![]({Dings_Id}.py)\n"
-	)
-
-
-
-def _Sidecar_Create_Text_Md(
-
-	Title: str,
-	Dings_Id: int,
-	Creator_Id: int,
-	Data_File_Name: str,
-) -> str:
-	Data_Ext = Path(Data_File_Name).suffix
-	return (
-		f"# {Title}\n\n"
-		f"I am a [Text](200200000.md).\n\n"
-		f"## About\n\n"
-		f"- My [Creator](60106.md) is [{Creator_Id}.md]({Creator_Id}.md).\n\n"
-		f"## Data\n\n"
-		f"![]({Dings_Id}{Data_Ext})\n"
 	)
 
 
@@ -159,26 +194,26 @@ def _Help_Top() -> None:
 	_Print("  -verbose: Print verbose Messages")
 	_Print("")
 	_Print("Commands:")
-	_Print("   Import: Import Data")
+	_Print("   Import: Import Data Into Dings")
 
 
 def _Help_Import() -> None:
 	_Print("Dings-Gpt Import [COMMAND]")
 	_Print("")
-	_Print("Import Data")
+	_Print("Import Data Into Dings")
 	_Print("")
 	_Print("Options:")
 	_Print("  -help: Print Description of Command")
 	_Print("  -verbose: Print verbose Messages")
 	_Print("")
 	_Print("Commands:")
-	_Print("   Text: Import Text")
+	_Print("   Text: Import Text Data")
 
 
 def _Help_Import_Text() -> None:
 	_Print("Dings-Gpt Import Text [COMMAND]")
 	_Print("")
-	_Print("Import Text")
+	_Print("Import Text Data Into Dings")
 	_Print("")
 	_Print("Options:")
 	_Print("  -help: Print Description of Command")
@@ -197,19 +232,33 @@ def _Help_Import_Text_File() -> None:
 	_Print("  -help: Print Description of Command")
 	_Print("  -verbose: Print verbose Messages")
 	_Print("  -start-id: First Dings-Id Candidate")
-	_Print("  -creator: Dings-Id Of Creator (Usually a Program Dings)")
+	_Print("  -creator: Dings-Id Of Creator (Optional)")
 	_Print("  -mode: copy|move|link (Default: copy)")
 	_Print("  -title: Title For Side-Car Markdown (Default: Original File-Name)")
 	_Print("  -overwrite: 0|1 (Default: 0) Overwrite Existing Side-Car")
+	_Print("  -about: About Pair, Markdown-Like, Repeatable")
+	_Print("")
+	_Print("About Syntax Examples:")
+	_Print("  -about [Creator](60106)=[GPT](9000150)")
+	_Print("  -about [Creator](60106)=9000150")
+	_Print("  -about 60106=9000150")
 	_Print("")
 	_Print("Args:")
-	_Print("  <file>: Path To Text File")
+	_Print("  <file>: Path To Text File (e.g. .py)")
+
+
+def _Write_Text(File_Path: Path, Text: str, Overwrite: bool, Verbose: bool) -> None:
+	if File_Path.exists() and not Overwrite:
+		_Die(f"Refusing To Overwrite Existing File: {File_Path}")
+	File_Path.write_text(Text, encoding="utf-8")
+	if Verbose:
+		_Print(f"Written: {File_Path}")
 
 
 def _Cmd_Import_Text_File(Arg_List: List[str]) -> None:
 	Options, Rest = _Parse_Options(
 		Arg_List,
-		Option_Name_List=["start-id", "creator", "mode", "title", "overwrite"],
+		Option_Name_List=["start-id", "creator", "mode", "title", "overwrite", "about"],
 	)
 
 	Verbose = "verbose" in Options
@@ -218,19 +267,25 @@ def _Cmd_Import_Text_File(Arg_List: List[str]) -> None:
 		return
 
 	Start_Id_Str = Options.get("start-id")
-	Creator_Str = Options.get("creator")
-
-	if Start_Id_Str is None:
+	if Start_Id_Str is None or not isinstance(Start_Id_Str, str):
 		_Die("Missing Option: -start-id")
-	if Creator_Str is None:
-		_Die("Missing Option: -creator")
 
-	Start_Id = int(Start_Id_Str)
-	Creator_Id = int(Creator_Str)
-
-	Mode = (Options.get("mode") or "copy").lower()
+	Mode = str(Options.get("mode") or "copy").lower()
 	Title = Options.get("title")
-	Overwrite = (Options.get("overwrite") or "0") in ("1", "true", "yes")
+	Overwrite = str(Options.get("overwrite") or "0").lower() in ("1", "true", "yes")
+
+	Creator_Str = Options.get("creator")
+	Creator_Id: Optional[int] = None
+	if isinstance(Creator_Str, str):
+		try:
+			Creator_Id = int(Creator_Str)
+		except ValueError:
+			_Die(f"Invalid -creator: {Creator_Str!r}")
+
+	try:
+		Start_Id = int(Start_Id_Str)
+	except ValueError:
+		_Die(f"Invalid -start-id: {Start_Id_Str!r}")
 
 	Source_Path = Path(Rest[0])
 	if not Source_Path.exists():
@@ -242,23 +297,71 @@ def _Cmd_Import_Text_File(Arg_List: List[str]) -> None:
 	Target_Data_Path = Dir_Path / f"{Next_Id}{Source_Path.suffix}"
 	Target_Md_Path = Dir_Path / f"{Next_Id}.md"
 
-	_Copy_Move_Link(Source_Path, Target_Data_Path, Mode=Mode, Verbose=Verbose)
+	_Copy_Move_Link(Source_Path, Target_Data_Path, Mode=Mode)
 
-	Title_Final = Title if Title else Source_Path.name
+	Title_Final = str(Title) if isinstance(Title, str) and Title else Source_Path.name
+
+	Name_Map = _Load_Dings_Name_Map(Dir_Path / "0.txt")
+
+	def _Name_For(Id_Int: int, Override: Optional[str]) -> str:
+		if Override:
+			return Override
+		return Name_Map.get(Id_Int, str(Id_Int))
+
+	About_Line_List: List[str] = []
+
 	if Source_Path.suffix.lower() == ".py":
-		Md_Text = _Sidecar_Create_Program_Md(
+		# Defaults
+		About_Line_List.append(
+			_Render_About_Line(
+				Attr_Id=9010000,
+				Attr_Name=_Name_For(9010000, "Programming-Language"),
+				Value_Id=9010003,
+				Value_Name=_Name_For(9010003, "Python"),
+			)
+		)
+		About_Line_List.append(
+			_Render_About_Line(
+				Attr_Id=611006,
+				Attr_Name=_Name_For(611006, "Original-Name"),
+				Value_Id=Next_Id,
+				Value_Name=Source_Path.name,
+			)
+		)
+
+		# Optional Creator
+		if Creator_Id is not None:
+			About_Line_List.append(
+				_Render_About_Line(
+					Attr_Id=60106,
+					Attr_Name=_Name_For(60106, "Creator"),
+					Value_Id=Creator_Id,
+					Value_Name=_Name_For(Creator_Id, None),
+				)
+			)
+
+		# Manual About Pairs
+		About_Opt = Options.get("about")
+		if isinstance(About_Opt, list):
+			for Pair_Str in About_Opt:
+				Attr_Id, Attr_Name_Override, Val_Id, Val_Name_Override = _Parse_About_Pair(Pair_Str)
+				About_Line_List.append(
+					_Render_About_Line(
+						Attr_Id=Attr_Id,
+						Attr_Name=_Name_For(Attr_Id, Attr_Name_Override),
+						Value_Id=Val_Id,
+						Value_Name=_Name_For(Val_Id, Val_Name_Override),
+					)
+				)
+
+		Md_Text = _Sidecar_Program_Md(
 			Title=Title_Final,
 			Dings_Id=Next_Id,
-			Original_Name=Source_Path.name,
+			About_Line_List=About_Line_List,
 		)
 	else:
-		Md_Text = _Sidecar_Create_Text_Md(
+		_Die("Currently Only Python (.py) Is Supported Here")
 
-		Title=Title_Final,
-		Dings_Id=Next_Id,
-		Creator_Id=Creator_Id,
-			Data_File_Name=Target_Data_Path.name,
-		)
 	_Write_Text(Target_Md_Path, Md_Text, Overwrite=Overwrite, Verbose=Verbose)
 
 	_Print(f"Created Dings {Next_Id}")
@@ -289,6 +392,7 @@ def Main() -> None:
 		if "help" in Sub_Options or not Sub_Rest:
 			_Help_Import()
 			return
+
 		Sub_Command = _Match_Command(Sub_Rest[0], ["Text"])
 		Sub2_Arg_List = Sub_Rest[1:]
 
@@ -297,6 +401,7 @@ def Main() -> None:
 			if "help" in Sub2_Options or not Sub2_Rest:
 				_Help_Import_Text()
 				return
+
 			Leaf_Command = _Match_Command(Sub2_Rest[0], ["File"])
 			Leaf_Arg_List = Sub2_Rest[1:]
 			if Leaf_Command == "File":
