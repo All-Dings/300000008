@@ -366,6 +366,8 @@
 300040001.md   Dings_Sip-Toggle
 300040000.md   Dings-App
 
+300030100.md   dings-gpt.py
+
 300030009.md   Dings-Tool-Host
 300030008.md   Dings-Mac-Win-Germany-Keyboard
 300030007.md   Dings-Mac-Book-Install-Howto
