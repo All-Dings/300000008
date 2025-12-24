@@ -85,6 +85,11 @@ def Make_Circular_Orbit_Forces_Animation(
 	Ax_Left_Force.set_ylabel("Kraft")
 	Ax_Left_Force.set_yticks(Np.arange(-10, 11, 1))
 
+	# Grid: X = space (x-position), Y = force scale
+	Ax_Left.grid(False)
+	Ax_Left_Force.grid(True, axis="y", alpha=0.35)
+
+
 	# Conversion from force-units to space-units so that force axis matches right axis
 	Space_Per_Force = (Space_Max - Space_Min) / (Force_Max - Force_Min)  # = 2
 
