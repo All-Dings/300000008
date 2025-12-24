@@ -237,11 +237,14 @@ def Make_Circular_Orbit_Forces_Animation(
 		T_Phys = float(T_Phys_Frame[Frame_Index])
 		T_Video = float(T_Phys / Time_Scale)
 
+		Angle_Deg = (Theta_Frame[Frame_Index] * 180.0 / Np.pi) % 360.0
+
 		Info_Text.set_text(
 			f"Time_Scale = {Time_Scale:g}x\n"
 			f"t (phys)  = {T_Phys:5.2f} s\n"
 			f"t (video) = {T_Video:5.2f} s\n"
 			f"s        = {Sv:6.2f}\n"
+			f"φ        = {Angle_Deg:6.1f}°\n"
 			f"|Fg|      = {Fg:6.3f}\n"
 			f"Fg_x      = {Fgx:6.3f}\n"
 			f"Fg_y      = {Fgy:6.3f}"
