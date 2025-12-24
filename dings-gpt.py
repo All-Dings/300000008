@@ -244,6 +244,7 @@ def _Help_Import_Text_File() -> None:
 	_Print("  -overwrite: 0|1 (Default: 0) Overwrite Existing Side-Car")
 	_Print("  -about: About Pair, Markdown-Like, Repeatable")
 	_Print("  -about-file: Path To .about Config (Optional)")
+	_Print("  -alias <name>: Create Soft-Link With Explicit Alias Name")
 	_Print("")
 	_Print("About Syntax Examples:")
 	_Print("  -about-file GW-010-Plot-B-vs-A.about")
@@ -282,7 +283,7 @@ def _Load_About_File(About_Path: Path) -> List[str]:
 def _Cmd_Import_Text_File(Arg_List: List[str]) -> None:
 	Options, Rest = _Parse_Options(
 		Arg_List,
-		Option_Name_List=["start-id", "creator", "mode", "title", "overwrite", "about", "about-file"],
+		Option_Name_List=["start-id", "creator", "mode", "title", "overwrite", "about", "about-file", "alias"],
 	)
 
 	Verbose = "verbose" in Options
@@ -322,6 +323,27 @@ def _Cmd_Import_Text_File(Arg_List: List[str]) -> None:
 	Target_Md_Path = Dir_Path / f"{Next_Id}.md"
 
 	_Copy_Move_Link(Source_Path, Target_Data_Path, Mode=Mode)
+
+	# Optional Alias (Soft-Link)
+	Alias_Opt = Options.get("alias")
+	if isinstance(Alias_Opt, str) and Alias_Opt:
+		Alias_Name = Alias_Opt
+		Alias_Path = Dir_Path / Alias_Name
+		# If Alias_Name equals the target file name, do nothing
+		if Alias_Path.name != Target_Data_Path.name:
+			if Alias_Path.exists() or Alias_Path.is_symlink():
+				if not Overwrite:
+					_Die(f"Refusing To Overwrite Existing Alias: {Alias_Path}")
+				try:
+					Alias_Path.unlink()
+				except OSError as Exc:
+					_Die(f"Could Not Remove Existing Alias: {Alias_Path} ({Exc})")
+				try:
+					Alias_Path.symlink_to(Target_Data_Path.name)
+				except OSError as Exc:
+					_Die(f"Could Not Create Alias: {Alias_Path} -> {Target_Data_Path.name} ({Exc})")
+				if Verbose:
+					_Print(f"Alias: {Alias_Path.name} -> {Target_Data_Path.name}")
 
 	Title_Final = str(Title) if isinstance(Title, str) and Title else Source_Path.name
 
