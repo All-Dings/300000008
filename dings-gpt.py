@@ -132,7 +132,7 @@ def _Sidecar_Create_Video_Md(
 
 
 def _Help_Top() -> None:
-	_Print("Dingsgpt [COMMAND]")
+	_Print("Dings-Gpt [COMMAND]")
 	_Print("")
 	_Print("Tool for working with Dings and GPT-related Helpers.")
 	_Print("")
@@ -145,7 +145,7 @@ def _Help_Top() -> None:
 
 
 def _Help_Sidecar() -> None:
-	_Print("Dingsgpt Sidecar [COMMAND]")
+	_Print("Dings-Gpt Sidecar [COMMAND]")
 	_Print("")
 	_Print("Work with Side-Car-Files")
 	_Print("")
@@ -154,13 +154,13 @@ def _Help_Sidecar() -> None:
 	_Print("  -verbose: Print verbose Messages")
 	_Print("")
 	_Print("Commands:")
-	_Print("   Create: Create Side-Car-File For a Data-File")
+	_Print("   Create: Create Side-Car-File for a Data-File")
 
 
 def _Help_Sidecar_Create() -> None:
-	_Print("Dingsgpt Sidecar Create [COMMAND]")
+	_Print("Dings-Gpt Sidecar Create [COMMAND]")
 	_Print("")
-	_Print("Create Side-Car-File For a Data-File")
+	_Print("Create Side-Car-File for a Data-File")
 	_Print("")
 	_Print("Options:")
 	_Print("  -help: Print Description of Command")
@@ -173,9 +173,6 @@ def _Help_Sidecar_Create() -> None:
 	_Print("")
 	_Print("Args:")
 	_Print("  <file>: Path To Data-File (e.g. .mp4)")
-	_Print("")
-	_Print("Example:")
-	_Print("  dings-gpt sidec crea -start-id 400007001 -creator 400007000 400007000.mp4")
 
 
 def _Cmd_Sidecar_Create(Arg_List: List[str]) -> None:
@@ -189,7 +186,7 @@ def _Cmd_Sidecar_Create(Arg_List: List[str]) -> None:
 		_Help_Sidecar_Create()
 		return
 
-	Start_Id_Str = Options.get("start-id") or Options.get("start_id") or Options.get("startid")
+	Start_Id_Str = Options.get("start-id")
 	Creator_Str = Options.get("creator")
 
 	if Start_Id_Str is None:
@@ -197,15 +194,8 @@ def _Cmd_Sidecar_Create(Arg_List: List[str]) -> None:
 	if Creator_Str is None:
 		_Die("Missing Option: -creator")
 
-	try:
-		Start_Id = int(Start_Id_Str)
-	except ValueError:
-		_Die(f"Invalid -start-id: {Start_Id_Str!r}")
-
-	try:
-		Creator_Id = int(Creator_Str)
-	except ValueError:
-		_Die(f"Invalid -creator: {Creator_Str!r}")
+	Start_Id = int(Start_Id_Str)
+	Creator_Id = int(Creator_Str)
 
 	Mode = (Options.get("mode") or "copy").lower()
 	Title = Options.get("title")
@@ -247,8 +237,6 @@ def Main() -> None:
 	if "help" in Top_Options:
 		_Help_Top()
 		return
-
-	Verbose = "verbose" in Top_Options
 
 	if not Rest:
 		_Help_Top()
