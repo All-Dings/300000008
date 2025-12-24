@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-# Circular orbit with force decomposition (R=16, F_G=4, draw scale = 2)
+# Circular Orbit With Force Decomposition (R=16, F_G=4)
+# - Left: Space Coordinates x/y ([-20,20]) + Force Axis ([-10,10])
+# - Right: F_Gx(s), F_Gy(s) with matching Force Scale ([-10,10])
+# - One Orbit
 
 import numpy as Np
 import matplotlib.pyplot as Plt
@@ -7,12 +10,29 @@ from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
 from pathlib import Path
 
 
-def Gravity_Force_2D(G: float, X: float, Y: float):
-	R = Np.hypot(X, Y)
-	F = G / R
-	Fx = -F * X / R
-	Fy = -F * Y / R
+def Gravity_Force_2D(G: float, X: float, Y: float) -> tuple[float, float, float]:
+	R = float(Np.hypot(X, Y))
+	F = float(G / R)  # 2D: |F| = G / R
+	Fx = float(-F * X / R)
+	Fy = float(-F * Y / R)
 	return F, Fx, Fy
+
+
+def Save_Animation_Gif_And_Mp4(
+	Anim: FuncAnimation,
+	Output_Dir: Path,
+	Name_Base: str,
+	Fps: int,
+) -> None:
+
+	Gif_Path = Output_Dir / f"{Name_Base}.gif"
+	Mp4_Path = Output_Dir / f"{Name_Base}.mp4"
+
+	Anim.save(Gif_Path, writer=PillowWriter(fps=Fps))
+	Anim.save(Mp4_Path, writer=FFMpegWriter(fps=Fps))
+
+	print("Saved:", Gif_Path)
+	print("Saved:", Mp4_Path)
 
 
 def Make_Circular_Orbit_Forces_Animation(
@@ -21,129 +41,214 @@ def Make_Circular_Orbit_Forces_Animation(
 	Time_Scale: float = 2.0,
 	Frame_Count: int = 360,
 	Fps: int = 25,
-):
+) -> None:
 
-	F_G = G / R_Orbit
-	V = Np.sqrt(G)
-	Omega = V / R_Orbit
+	F_G = float(G / R_Orbit)          # = 4
+	V = float(Np.sqrt(G))            # = 8 (for this 2D model)
+	Omega = float(V / R_Orbit)
 
-	T_End = 2 * Np.pi / Omega
-	T = Np.linspace(0.0, T_End, Frame_Count)
-	Theta = Omega * T
+	T_Phys_End = float(2.0 * Np.pi / Omega)
+	T_Phys_Frame = Np.linspace(0.0, T_Phys_End, Frame_Count)
+	Theta_Frame = Omega * T_Phys_Frame
 
-	X = R_Orbit * Np.cos(Theta)
-	Y = R_Orbit * Np.sin(Theta)
-	S = R_Orbit * Theta
+	X_Frame = R_Orbit * Np.cos(Theta_Frame)
+	Y_Frame = R_Orbit * Np.sin(Theta_Frame)
 
-	Fig, (Ax_L, Ax_R) = Plt.subplots(1, 2, figsize=(12, 6))
+	# Path length along orbit
+	S_Frame = R_Orbit * Theta_Frame
 
-	Ax_L.set_aspect("equal")
-	Ax_L.set_xlim(-22, 22)
-	Ax_L.set_ylim(-22, 22)
-	Ax_L.set_title("Kreisbahn und Kraftzerlegung")
-	Ax_L.set_xlabel("x")
-	Ax_L.set_ylabel("y")
-	# Secondary axes for force scale (visual)
-	Ax_L_Force = Ax_L.twinx()
-	Ax_L_Force.set_ylim(-11, 11)
-	Ax_L_Force.set_ylabel("Kraft (skaliert, ×2)", color="black")
-	Ax_L_Force.tick_params(axis="y", labelcolor="black")
+	Fig = Plt.figure(figsize=(12, 6))
+	Grid = Fig.add_gridspec(1, 2, width_ratios=[1.1, 1.0], wspace=0.25)
 
+	Ax_Left = Fig.add_subplot(Grid[0, 0])
+	Ax_Right = Fig.add_subplot(Grid[0, 1])
 
-	Ax_L.scatter([0], [0], s=600, c="gold", edgecolors="black", zorder=3)
-	Ball, = Ax_L.plot([], [], "o", color="tab:blue", markersize=10, zorder=5)
+	# ------------------------------------------------------------
+	# Left: Space + Force Axis
+	# ------------------------------------------------------------
 
-	Arrow_T = None
+	Space_Min = -20.0
+	Space_Max = 20.0
+	Force_Min = -10.0
+	Force_Max = 10.0
+
+	Ax_Left.set_aspect("equal", adjustable="box")
+	Ax_Left.set_xlim(Space_Min, Space_Max)
+	Ax_Left.set_ylim(Space_Min, Space_Max)
+	Ax_Left.set_title("Kreisbahn und Kraftzerlegung")
+	Ax_Left.set_xlabel("x")
+	Ax_Left.set_ylabel("y")
+
+	# Secondary axis: Force scale matching right plot
+	Ax_Left_Force = Ax_Left.twinx()
+	Ax_Left_Force.set_ylim(Force_Min, Force_Max)
+	Ax_Left_Force.set_ylabel("Kraft")
+	Ax_Left_Force.set_yticks([-10, -5, 0, 5, 10])
+
+	# Conversion from force-units to space-units so that force axis matches right axis
+	Space_Per_Force = (Space_Max - Space_Min) / (Force_Max - Force_Min)  # = 2
+
+	# We keep this at 1.0 so that the force axis labels match the actual values.
+	# (Visual size is still larger because Space_Per_Force = 2.)
+	Force_Draw_Scale = 1.0
+
+	# Sun (Center)
+	Ax_Left.scatter([0], [0], s=600, c="gold", edgecolors="black", zorder=3)
+
+	# Earth (Ball)
+	Ball, = Ax_Left.plot([], [], marker="o", markersize=10, linestyle="None", color="tab:blue", zorder=6)
+
+	Arrow_Total = None
 	Arrow_X = None
 	Arrow_Y = None
 	Rect = None
 
-	Ax_R.set_title("Kraftkomponenten über Weg")
-	Ax_R.set_xlabel("Weg s")
-	Ax_R.set_ylabel("Kraft")
-	Ax_R.set_xlim(0, 2 * Np.pi * R_Orbit)
-	Ax_R.set_ylim(-F_G * 2.5, F_G * 2.5)
-	Ax_R.grid(True, alpha=0.3)
+	# ------------------------------------------------------------
+	# Right: Force Components Over Path
+	# ------------------------------------------------------------
 
-	Line_Fx, = Ax_R.plot([], [], color="green", label="F_Gx")
-	Line_Fy, = Ax_R.plot([], [], color="red", label="F_Gy")
-	Ax_R.legend()
+	Ax_Right.set_title("Kraftkomponenten über Weg")
+	Ax_Right.set_xlabel("Weg s")
+	Ax_Right.set_ylabel("Kraft")
+	Ax_Right.set_xlim(0.0, float(2.0 * Np.pi * R_Orbit))
+	Ax_Right.set_ylim(Force_Min, Force_Max)
+	Ax_Right.grid(True, alpha=0.3)
 
-	S_List = []
-	Fx_List = []
-	Fy_List = []
+	Line_Fgx, = Ax_Right.plot([], [], color="green", linewidth=2, label="F_Gx")
+	Line_Fgy, = Ax_Right.plot([], [], color="red", linewidth=2, label="F_Gy")
+	Ax_Right.legend(loc="upper right")
 
-	Info = Fig.text(0.02, 0.95, "", ha="left", va="top", family="monospace")
+	S_List: list[float] = []
+	Fgx_List: list[float] = []
+	Fgy_List: list[float] = []
 
-	def Remove(obj):
-		if obj is not None:
-			obj.remove()
+	Info_Text = Fig.text(0.02, 0.95, "", ha="left", va="top", family="monospace")
+
+	def Remove(Obj):
+		if Obj is not None:
+			Obj.remove()
 
 	def Init():
 		Ball.set_data([], [])
-		Line_Fx.set_data([], [])
-		Line_Fy.set_data([], [])
+		Line_Fgx.set_data([], [])
+		Line_Fgy.set_data([], [])
 		S_List.clear()
-		Fx_List.clear()
-		Fy_List.clear()
-		return Ball, Line_Fx, Line_Fy
+		Fgx_List.clear()
+		Fgy_List.clear()
+		return Ball, Line_Fgx, Line_Fgy
 
-	def Update(I):
-		nonlocal Arrow_T, Arrow_X, Arrow_Y, Rect
+	def Update(Frame_Index: int):
+		nonlocal Arrow_Total, Arrow_X, Arrow_Y, Rect
 
-		Xv = float(X[I])
-		Yv = float(Y[I])
-		Sv = float(S[I])
+		Xv = float(X_Frame[Frame_Index])
+		Yv = float(Y_Frame[Frame_Index])
+		Sv = float(S_Frame[Frame_Index])
 
 		Fg, Fgx, Fgy = Gravity_Force_2D(G, Xv, Yv)
 
-		Remove(Arrow_T)
+		# Convert force components to space-units for drawing
+		Dx = Space_Per_Force * Force_Draw_Scale * Fgx
+		Dy = Space_Per_Force * Force_Draw_Scale * Fgy
+
+		Remove(Arrow_Total)
 		Remove(Arrow_X)
 		Remove(Arrow_Y)
 		Remove(Rect)
 
-		Force_Draw_Scale = 2.0
+		Arrow_Total = Ax_Left.arrow(
+			Xv,
+			Yv,
+			Dx,
+			Dy,
+			width=0.10,
+			color="black",
+			zorder=5,
+			length_includes_head=True,
+			head_width=0.9,
+			head_length=1.2,
+		)
 
-		Dx = (Fgx / Fg) * Fg * Force_Draw_Scale
-		Dy = (Fgy / Fg) * Fg * Force_Draw_Scale
+		Arrow_X = Ax_Left.arrow(
+			Xv,
+			Yv,
+			Dx,
+			0.0,
+			width=0.08,
+			color="green",
+			zorder=4,
+			length_includes_head=True,
+			head_width=0.8,
+			head_length=1.1,
+		)
 
-		Arrow_T = Ax_L.arrow(Xv, Yv, Dx, Dy, width=0.08, color="black", zorder=4)
-		Arrow_X = Ax_L.arrow(Xv, Yv, Dx, 0.0, width=0.06, color="green", zorder=3)
-		Arrow_Y = Ax_L.arrow(Xv + Dx, Yv, 0.0, Dy, width=0.06, color="red", zorder=3)
+		Arrow_Y = Ax_Left.arrow(
+			Xv + Dx,
+			Yv,
+			0.0,
+			Dy,
+			width=0.08,
+			color="red",
+			zorder=4,
+			length_includes_head=True,
+			head_width=0.8,
+			head_length=1.1,
+		)
 
-		Rect = Ax_L.add_patch(
-			Plt.Rectangle((Xv, Yv), Dx, Dy, facecolor="grey", alpha=0.5, linewidth=1.2)
+		Rect = Ax_Left.add_patch(
+			Plt.Rectangle(
+				(Xv, Yv),
+				Dx,
+				Dy,
+				facecolor="grey",
+				alpha=0.5,
+				linewidth=1.2,
+				zorder=2,
+			)
 		)
 
 		Ball.set_data([Xv], [Yv])
 
 		S_List.append(Sv)
-		Fx_List.append(Fgx)
-		Fy_List.append(Fgy)
+		Fgx_List.append(Fgx)
+		Fgy_List.append(Fgy)
 
-		Line_Fx.set_data(S_List, Fx_List)
-		Line_Fy.set_data(S_List, Fy_List)
+		Line_Fgx.set_data(S_List, Fgx_List)
+		Line_Fgy.set_data(S_List, Fgy_List)
 
-		Info.set_text(
-			f"Time_Scale = {Time_Scale}x\n"
-			f"t (phys) = {T[I]:5.2f} s\n"
-			f"s = {Sv:6.2f}\n"
-			f"Fg_x = {Fgx:6.3f}\n"
-			f"Fg_y = {Fgy:6.3f}"
+		# Time: show physical time and video time scaling
+		T_Phys = float(T_Phys_Frame[Frame_Index])
+		T_Video = float(T_Phys / Time_Scale)
+
+		Info_Text.set_text(
+			f"Time_Scale = {Time_Scale:g}x\n"
+			f"t (phys)  = {T_Phys:5.2f} s\n"
+			f"t (video) = {T_Video:5.2f} s\n"
+			f"s        = {Sv:6.2f}\n"
+			f"|Fg|      = {Fg:6.3f}\n"
+			f"Fg_x      = {Fgx:6.3f}\n"
+			f"Fg_y      = {Fgy:6.3f}"
 		)
 
-		return Ball, Arrow_T, Arrow_X, Arrow_Y, Rect, Line_Fx, Line_Fy
+		return Ball, Arrow_Total, Arrow_X, Arrow_Y, Rect, Line_Fgx, Line_Fgy
 
 	Anim = FuncAnimation(Fig, Update, frames=Frame_Count, init_func=Init, blit=False)
 
-	Out = Path("050-Circular-Orbit-Forces")
-	Out.mkdir(exist_ok=True)
+	Output_Dir = Path("050-Circular-Orbit-Forces")
+	Output_Dir.mkdir(exist_ok=True)
 
-	Anim.save(Out / "circular_orbit_forces_R16_F4.gif", writer=PillowWriter(fps=Fps))
-	Anim.save(Out / "circular_orbit_forces_R16_F4.mp4", writer=FFMpegWriter(fps=Fps))
+	Save_Animation_Gif_And_Mp4(
+		Anim=Anim,
+		Output_Dir=Output_Dir,
+		Name_Base="circular_orbit_forces_R16_F4",
+		Fps=Fps,
+	)
 
 	Plt.close(Fig)
 
 
-if __name__ == "__main__":
+def Main() -> None:
 	Make_Circular_Orbit_Forces_Animation()
+
+
+if __name__ == "__main__":
+	Main()
