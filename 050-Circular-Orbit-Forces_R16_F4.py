@@ -133,7 +133,21 @@ def Make_Circular_Orbit_Forces_Animation(
 	Fgx_List: list[float] = []
 	Fgy_List: list[float] = []
 
-	Info_Text = Fig.text(0.02, 0.95, "", ha="left", va="top", family="monospace")
+	Info_Text = Fig.text(
+	0.02,
+	0.95,
+	"",
+	ha="left",
+	va="top",
+	family="monospace",
+	bbox=dict(
+		facecolor="#e0e0e0",
+		edgecolor="black",
+		boxstyle="round,pad=0.25",
+		alpha=1.0,
+	),
+	 zorder=1000,
+)
 
 	def Remove(Obj):
 		if Obj is not None:
