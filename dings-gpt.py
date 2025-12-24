@@ -115,7 +115,24 @@ def _Copy_Move_Link(Source_Path: Path, Target_Path: Path, Mode: str, Verbose: bo
 		_Die(f"Unknown Mode: {Mode!r}. Expected: copy, move, link")
 
 
+def _Sidecar_Create_Program_Md(
+	Title: str,
+	Dings_Id: int,
+	Original_Name: str,
+) -> str:
+	return (
+		f"# {Title}\n\n"
+		f"## About\n\n"
+		f"- My [Programming-Language](9010000.md) is [Python](9010003.md).\n"
+		f"- My [Original-Name](611006.md) is [{Original_Name}]({Dings_Id}.md)\n\n"
+		f"## Data\n\n"
+		f"![]({Dings_Id}.py)\n"
+	)
+
+
+
 def _Sidecar_Create_Text_Md(
+
 	Title: str,
 	Dings_Id: int,
 	Creator_Id: int,
@@ -228,12 +245,20 @@ def _Cmd_Import_Text_File(Arg_List: List[str]) -> None:
 	_Copy_Move_Link(Source_Path, Target_Data_Path, Mode=Mode, Verbose=Verbose)
 
 	Title_Final = Title if Title else Source_Path.name
-	Md_Text = _Sidecar_Create_Text_Md(
+	if Source_Path.suffix.lower() == ".py":
+		Md_Text = _Sidecar_Create_Program_Md(
+			Title=Title_Final,
+			Dings_Id=Next_Id,
+			Original_Name=Source_Path.name,
+		)
+	else:
+		Md_Text = _Sidecar_Create_Text_Md(
+
 		Title=Title_Final,
 		Dings_Id=Next_Id,
 		Creator_Id=Creator_Id,
-		Data_File_Name=Target_Data_Path.name,
-	)
+			Data_File_Name=Target_Data_Path.name,
+		)
 	_Write_Text(Target_Md_Path, Md_Text, Overwrite=Overwrite, Verbose=Verbose)
 
 	_Print(f"Created Dings {Next_Id}")
