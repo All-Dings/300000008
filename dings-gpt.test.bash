@@ -8,7 +8,7 @@ set -euo pipefail
 #   ./dings-gpt.import-simulations.bash [OPTIONS]
 #
 # Options:
-#   -bin DINGS_GPT_BIN   Path To dings-gpt Binary (Default: dings-gpt)
+#   -bin DINGS_GPT_BIN  Path To dings-gpt Binary (Default: dings-gpt)
 #   -about ABOUT_FILE   Path To .about File (Default: dings-gpt.about)
 #   -cleanup 0|1        Remove Created Files After Import (Default: 0)
 #   -verbose 0|1        Enable Verbose Mode (Default: 0)
@@ -21,7 +21,7 @@ set -euo pipefail
 # - Options MUST come before the file argument (dings-host style).
 # - Pick START_ID values that do not collide with existing files.
 
-DINGS_GPT_BIN="${DINGS_GPT_BIN:-dings-gpt.exe}"
+DINGS_GPT_BIN="${DINGS_GPT_BIN:-dings-gpt}"
 ABOUT_FILE="${ABOUT_FILE:-dings-gpt.about}"
 CLEAN_UP="${CLEAN_UP:-0}"
 VERBOSE="${VERBOSE:-0}"
