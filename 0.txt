@@ -475,6 +475,9 @@
 
 ### Gott-wüfelt-nicht
 
+400007010.md WG-010-Plot-B-vs-A.py
+400007000.md WG-055-Circular-Orbit-Forces_R16_F4.py
+
 400006082.md My-Pocket-Calculator-Cut.png
 400006081.md Nürburgring-Nordschleife.mp4
 400006080.md Pink-Geo-Dreieck-GPT.png
