@@ -30,56 +30,11 @@ def Save_Animation_Gif_And_Mp4(
 	print("Saved:", Mp4_Path)
 
 
-def Potential(
-	Dim: int,
-	G: float,
-	R: float,
-) -> float:
-
-	if Dim == 2:
-		return G * math.log(R)
-	return -G / float(Dim - 2) * (R ** (-(Dim - 2)))
-
-
-def Acc_Vector(
-	Dim: int,
-	G: float,
-	Pos: Np.ndarray,
-) -> Np.ndarray:
-
-	R = float(Np.linalg.norm(Pos))
-	return (-G) * Pos / (R ** Dim)
-
-
-def Energy_Lz_Speed(
-	Dim: int,
-	G: float,
-	Pos: Np.ndarray,
-	Vel: Np.ndarray,
-) -> Tuple[float, float, float]:
-
-	R = float(Np.linalg.norm(Pos))
-	Speed = float(Np.linalg.norm(Vel))
-
-	E = 0.5 * Speed * Speed + Potential(Dim, G, R)
-
-	if Pos.shape[0] >= 2:
-		Lz = float(Pos[0] * Vel[1] - Pos[1] * Vel[0])
-	else:
-		Lz = 0.0
-
-	return E, Lz, Speed
-
-
-def Circular_Speed(
-	Dim: int,
+def Circular_Speed_Newton(
 	G: float,
 	R_Start: float,
 ) -> float:
-
-	if Dim == 2:
-		return math.sqrt(G)
-	return math.sqrt(G / (R_Start ** (Dim - 2)))
+	return math.sqrt(G / max(1e-12, R_Start))
 
 
 def Unit_Tangent_2D(
@@ -93,17 +48,72 @@ def Unit_Tangent_2D(
 	return Tx, Ty
 
 
-def Simulate_With_Tangential_Kick(
-	Dim: int,
+def Potential_GR_Effective(
 	G: float,
+	C: float,
+	R: float,
+	L2: float,
+) -> float:
+	# Potential: Newton + Schwarzschild-Correction (Weak-Field, 1PN, Planar Effective Term)
+	# U = -G/r - G*L^2/(c^2*r^3)
+	return -G / R - (G * L2) / ((C * C) * (R ** 3))
+
+
+def Acc_Vector_GR_Approx(
+	G: float,
+	C: float,
+	Pos: Np.ndarray,
+	Vel: Np.ndarray,
+) -> Np.ndarray:
+	"""
+	Schwarzschild Weak-Field Approximation (Planar, 1PN Effective Term):
+	a = -G * r / r^3  -  3*G*L^2/(c^2*r^5) * r
+	"""
+
+	R = float(Np.linalg.norm(Pos))
+	R3 = R ** 3
+
+	A_Newton = (-G) * Pos / R3
+
+	L_Vec = Np.cross(Pos, Vel)
+	L2 = float(Np.dot(L_Vec, L_Vec))
+
+	A_GR = (-3.0 * G * L2 / ((C * C) * (R ** 5))) * Pos
+
+	return A_Newton + A_GR
+
+
+def Energy_Lz_Speed_GR_Effective(
+	G: float,
+	C: float,
+	Pos: Np.ndarray,
+	Vel: Np.ndarray,
+) -> Tuple[float, float, float]:
+
+	R = float(Np.linalg.norm(Pos))
+	Speed = float(Np.linalg.norm(Vel))
+
+	L_Vec = Np.cross(Pos, Vel)
+	L2 = float(Np.dot(L_Vec, L_Vec))
+	Lz = float(L_Vec[2])
+
+	E = 0.5 * Speed * Speed + Potential_GR_Effective(G, C, R, L2)
+
+	return E, Lz, Speed
+
+
+def Simulate_Orbit_GR_With_Tangential_Kick(
+	G: float,
+	C: float,
 	R_Start: float,
 	V0: float,
 	V1: float,
 	T_Kick: float,
 	Dt: float,
 	T_Total: float,
-) -> Tuple[Np.ndarray, Np.ndarray, Np.ndarray, Np.ndarray, Np.ndarray, Np.ndarray, int]:
+):
 
+	Dim = 3
 	Step_Count = int(Np.ceil(T_Total / Dt)) + 1
 
 	Pos = Np.zeros(Dim, dtype=float)
@@ -130,15 +140,15 @@ def Simulate_With_Tangential_Kick(
 				Vel *= (V1 / Speed0)
 			Kick_Done = True
 
-		Acc0 = Acc_Vector(Dim, G, Pos)
+		Acc0 = Acc_Vector_GR_Approx(G, C, Pos, Vel)
 
 		Pos_New = Pos + Vel * Dt + 0.5 * Acc0 * Dt * Dt
-		Acc1 = Acc_Vector(Dim, G, Pos_New)
+		Acc1 = Acc_Vector_GR_Approx(G, C, Pos_New, Vel)
 
 		Vel = Vel + 0.5 * (Acc0 + Acc1) * Dt
 		Pos = Pos_New
 
-		E, Lz, Speed = Energy_Lz_Speed(Dim, G, Pos, Vel)
+		E, Lz, Speed = Energy_Lz_Speed_GR_Effective(G, C, Pos, Vel)
 
 		Pos_Array[Step, :] = Pos
 		Vel_Array[Step, :] = Vel
@@ -149,9 +159,9 @@ def Simulate_With_Tangential_Kick(
 	return Pos_Array, Vel_Array, E_Array, Lz_Array, S_Array, T_Array, Kick_Step
 
 
-def Make_Animation(
-	Dim: int,
+def Make_GR_Animation(
 	G: float,
+	C: float,
 	R_Start: float,
 	V0: float,
 	V1: float,
@@ -161,20 +171,17 @@ def Make_Animation(
 	Dt: float = 0.01,
 	Fps: int = 25,
 	Time_Scale: float = 2.0,
-	Orbits_After_Kick: float = 3.0,
+	Orbits_After_Kick: float = 6.0,
 	Comet_Distance_Behind: float = 7.0,
 	Comet_Appear_Delta_T: float = 1.0,
 ) -> None:
 
-	if Dim < 2:
-		raise ValueError("Dim must be >= 2 for the Orbit Plot and Lz.")
-
 	T_Orbit = 2.0 * math.pi * R_Start / max(1e-9, V0)
 	T_Total = max(T_Kick + Orbits_After_Kick * T_Orbit, 1.2 * T_Orbit)
 
-	Pos, Vel, E, Lz, S, T, Kick_Step = Simulate_With_Tangential_Kick(
-		Dim=Dim,
+	Pos, Vel, E, Lz, S, T, Kick_Step = Simulate_Orbit_GR_With_Tangential_Kick(
 		G=G,
+		C=C,
 		R_Start=R_Start,
 		V0=V0,
 		V1=V1,
@@ -231,9 +238,9 @@ def Make_Animation(
 	Ax_Orbit.set_aspect("equal", adjustable="box")
 	Ax_Orbit.set_xlim(-Limit, Limit)
 	Ax_Orbit.set_ylim(-Limit, Limit)
-	Ax_Orbit.set_xlabel("x")
-	Ax_Orbit.set_ylabel("y")
-	Ax_Orbit.set_title("Dim={0}: Tangential Kick With Comet (V: {1:g} → {2:g})".format(Dim, V0, V1))
+	Ax_Orbit.set_xlabel("X")
+	Ax_Orbit.set_ylabel("Y")
+	Ax_Orbit.set_title("GR Approx (Schwarzschild 1PN): Kick With Comet (V: {0:g} → {1:g})".format(V0, V1))
 
 	Ax_Orbit.scatter([0.0], [0.0], s=700, c="yellow", edgecolors="black", zorder=5)
 
@@ -251,7 +258,7 @@ def Make_Animation(
 
 	for Ax in (Ax_E, Ax_L, Ax_S):
 		Ax.axvline(T_Kick, alpha=0.4)
-		Ax.set_xlabel("t")
+		Ax.set_xlabel("T")
 
 	Ax_E.set_ylabel("E_Sum")
 	Ax_L.set_ylabel("L_Spin (Lz)")
@@ -320,36 +327,29 @@ def Make_Animation(
 			Kick_Marker.set_alpha(0.9)
 			Kick_Shown = True
 
-		e = float(Ef[F])
+		E_Sum = float(Ef[F])
 		L_Spin = float(Lf[F])
 		V_Cur = float(Sf[F])
 		R_Cur = float(math.hypot(x, y))
 
-		E_Cursor.set_data([T_Phys], [e])
+		E_Cursor.set_data([T_Phys], [E_Sum])
 		L_Cursor.set_data([T_Phys], [L_Spin])
 		S_Cursor.set_data([T_Phys], [V_Cur])
 
-		E_Mov = 0.5 * V_Cur * V_Cur
-		E_Grav = Potential(Dim, G, R_Cur)
-		E_Sum = E_Mov + E_Grav
-
 		Info.set_text(
-			"Dim     = {0:>8d}\n"
-			"G       = {1:>8.2f} GU\n"
-			"T_Scale = {2:>8.2f} ×\n"
-			"R_Start = {3:>8.2f} SU\n"
-			"T_Kick  = {4:>8.2f} Sec\n"
+			"G       = {0:>7.2f} GU\n"
+			"C       = {2:>7.2f} VU\n"
+			"T_Scale = {1:>7.2f} ×\n"
+			"R_Start = {3:>7.2f} SU\n"
+			"T_Kick  = {4:>7.2f} Sec\n"
 			"\n"
-			"T_Phys  = {5:>8.2f} Sec\n"
-			"V_Cur   = {6:>8.2f} VU\n"
-			"R_Cur   = {7:>8.2f} SU\n"
+			"T_Phys  = {5:>7.2f} Sec\n"
+			"V_Cur   = {6:>7.2f} VU\n"
+			"R_Cur   = {7:>7.2f} SU\n"
 			"\n"
-			"E_Mov   = {8:>8.4f} EU\n"
-			"E_Grav  = {9:>8.4f} EU\n"
-			"E_Sum   = {10:>8.4f} EU\n"
-			"\n"
-			"L_Spin  = {11:>8.4f} SU·VU"
-			.format(Dim, G, Time_Scale, R_Start, T_Kick, T_Phys, V_Cur, R_Cur, E_Mov, E_Grav, E_Sum, L_Spin)
+			"E_Sum   = {8:>7.4f} EU\n"
+			"L_Spin  = {9:>7.4f} SU·VU"
+			.format(G, Time_Scale, C, R_Start, T_Kick, T_Phys, V_Cur, R_Cur, E_Sum, L_Spin)
 		)
 
 		return []
@@ -360,33 +360,32 @@ def Make_Animation(
 	Plt.close(Fig)
 
 
-# Dim = 2, 3, or 4
-def Make_Animation_4_Dim(Dim: int = 2, Time_Scale: float = 2.0, Orbits_After_Kick: float = 20.0) -> None:
-
+# Choose C large for weak GR. Smaller C => stronger Precession (for Visualization).
+def Make_GR_Animation_4_C(C: float) -> None:
 	G = 64.0
 	R_Start = 4.0
 
-	V0 = Circular_Speed(Dim, G, R_Start)
+	V0 = Circular_Speed_Newton(G, R_Start)
 	V1 = V0 + 1.0
 
 	T_Kick = 2.0
 
-	Output_Dir = Path("031-Orbit-Kick-R2")
+	Output_Dir = Path("072-Orbit-Kick-ART")
 	Output_Dir.mkdir(exist_ok=True)
 
-	Make_Animation(
-		Dim=Dim,
+	Make_GR_Animation(
 		G=G,
+		C=C,
 		R_Start=R_Start,
 		V0=V0,
 		V1=V1,
 		T_Kick=T_Kick,
 		Output_Dir=Output_Dir,
-		Name_Base=f"kick_with_comet_E_Lz_V_info-{Dim}D",
+		Name_Base=f"gr_kick_with_comet_Eeff_Lz_V-{C}",
 		Dt=0.01,
 		Fps=25,
-		Time_Scale=Time_Scale,
-		Orbits_After_Kick=Orbits_After_Kick,
+		Time_Scale=6.0,
+		Orbits_After_Kick=20.0,
 		Comet_Distance_Behind=7.0,
 		Comet_Appear_Delta_T=1.0,
 	)
@@ -394,9 +393,9 @@ def Make_Animation_4_Dim(Dim: int = 2, Time_Scale: float = 2.0, Orbits_After_Kic
 	print("Done. Files written to:", Output_Dir)
 
 def Main() -> None:
-	Make_Animation_4_Dim(Dim=2, Time_Scale=2.0, Orbits_After_Kick=20.0)
-	Make_Animation_4_Dim(Dim=3, Time_Scale=4.0, Orbits_After_Kick=10.0)
-	Make_Animation_4_Dim(Dim=4, Time_Scale=4.0, Orbits_After_Kick=1.0)
+	Make_GR_Animation_4_C(240.0)
+	Make_GR_Animation_4_C(120.0)
+	Make_GR_Animation_4_C(60.0)
 
 if __name__ == "__main__":
 	Main()
