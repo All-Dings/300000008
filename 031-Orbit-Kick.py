@@ -352,8 +352,8 @@ def Make_Animation(
 	Plt.close(Fig)
 
 
-def Main() -> None:
-	Dim = 4  # 2, 3, or 4
+# Dim = 2, 3, or 4
+def Make_Animation_4_Dim(Dim: int) -> None:
 
 	G = 64.0
 	R0 = 4.0
@@ -385,6 +385,10 @@ def Main() -> None:
 
 	print("Done. Files written to:", Output_Dir)
 
+def Main() -> None:
+	Make_Animation_4_Dim(2)
+	Make_Animation_4_Dim(3)
+	Make_Animation_4_Dim(4)
 
 if __name__ == "__main__":
 	Main()
