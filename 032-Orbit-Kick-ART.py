@@ -360,12 +360,10 @@ def Make_GR_Animation(
 	Plt.close(Fig)
 
 
-def Main() -> None:
+# Choose C large for weak GR. Smaller C => stronger Precession (for Visualization).
+def Make_GR_Animation_4_C(C: float) -> None:
 	G = 64.0
 	R0 = 4.0
-
-	# Choose C large for weak GR. Smaller C => stronger Precession (for Visualization).
-	C = 120.0
 
 	V0 = Circular_Speed_Newton(G, R0)
 	V1 = V0 + 1.0
@@ -383,7 +381,7 @@ def Main() -> None:
 		V1=V1,
 		Kick_Time=Kick_Time,
 		Output_Dir=Output_Dir,
-		Name_Base="gr_kick_with_comet_Eeff_Lz_V",
+		Name_Base=f"gr_kick_with_comet_Eeff_Lz_V-{C}",
 		Dt=0.01,
 		Fps=25,
 		Time_Scale=6.0,
@@ -394,6 +392,10 @@ def Main() -> None:
 
 	print("Done. Files written to:", Output_Dir)
 
+def Main() -> None:
+	Make_GR_Animation_4_C(240.0)
+	Make_GR_Animation_4_C(120.0)
+	Make_GR_Animation_4_C(60.0)
 
 if __name__ == "__main__":
 	Main()
