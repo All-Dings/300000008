@@ -372,7 +372,7 @@ def Main() -> None:
 
 	Kick_Time = 2.0
 
-	Output_Dir = Path("060-Orbit-Kick_GR_Approx")
+	Output_Dir = Path("032-Orbit-Kick_ART")
 	Output_Dir.mkdir(exist_ok=True)
 
 	Make_GR_Animation(
@@ -386,8 +386,8 @@ def Main() -> None:
 		Name_Base="gr_kick_with_comet_Eeff_Lz_V",
 		Dt=0.01,
 		Fps=25,
-		Time_Scale=2.0,
-		Orbits_After_Kick=6.0,
+		Time_Scale=6.0,
+		Orbits_After_Kick=20.0,
 		Comet_Distance_Behind=7.0,
 		Comet_Appear_Delta_T=1.0,
 	)
