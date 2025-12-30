@@ -386,7 +386,7 @@ def Make_Animation_4_Dim(Dim: int = 2, Time_Scale: float = 2.0, Orbits_After_Kic
 	print("Done. Files written to:", Output_Dir)
 
 def Main() -> None:
-	Make_Animation_4_Dim(Dim=2, Time_Scale=4.0, Orbits_After_Kick=20.0)
+	Make_Animation_4_Dim(Dim=2, Time_Scale=2.0, Orbits_After_Kick=20.0)
 	Make_Animation_4_Dim(Dim=3, Time_Scale=4.0, Orbits_After_Kick=10.0)
 	Make_Animation_4_Dim(Dim=4, Time_Scale=4.0, Orbits_After_Kick=1.0)
 
