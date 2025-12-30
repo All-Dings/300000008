@@ -87,8 +87,8 @@ def Make_Circular_Orbit_Forces_Animation(
 	Ax_Left.set_aspect("equal", adjustable="box")
 	Ax_Left.set_xlim(-Limit, Limit)
 	Ax_Left.set_ylim(-Limit, Limit)
-	Ax_Left.set_xlabel("x")
-	Ax_Left.set_ylabel("y")
+	Ax_Left.set_xlabel("X")
+	Ax_Left.set_ylabel("Y")
 	Ax_Left.set_title("Kreisbahn und Kraftzerlegung")
 
 	Ax_Left.scatter([0], [0], s=650, c="yellow", edgecolors="black", zorder=2)
@@ -109,7 +109,7 @@ def Make_Circular_Orbit_Forces_Animation(
 	# =========================================================
 
 	Ax_Right.set_title("Kraft-Komponenten entlang des Kreiswegs")
-	Ax_Right.set_xlabel("D_Weg (S)")
+	Ax_Right.set_xlabel("D_Way (S)")
 	Ax_Right.set_ylabel("FG")
 
 	Ax_Right.set_xlim(0.0, float(S_Frame[-1]))
@@ -129,9 +129,19 @@ def Make_Circular_Orbit_Forces_Animation(
 	Fy_List = []
 
 	Info_Text = Fig.text(
-		0.02, 0.98, "", va="top", ha="left", fontsize=11
+		0.02, 0.98,
+		"",
+		va="top",
+		ha="left",
+		fontsize=11,
+		family="monospace",
+		bbox=dict(
+			boxstyle="round,pad=0.4",
+			facecolor="#E6E6E6",
+			edgecolor="black",
+			alpha=0.95,
+		),
 	)
-
 	def Remove(A):
 		if A is None:
 			return
@@ -238,12 +248,16 @@ def Make_Circular_Orbit_Forces_Animation(
 		Point_Fx.set_data([Sv], [Fgx])
 		Point_Fy.set_data([Sv], [Fgy])
 
+		FG_abs = (Fgx * Fgx + Fgy * Fgy) ** 0.5
 		Info_Text.set_text(
-			f"T_Scale = {Time_Scale:g} ×\n"
-			f"T_Phys  = {Tv:7.2f} Secs\n"
-			f"D_Way   = {Sv:7.2f} DU\n"
-			f"FG_X    = {Fgx:7.4f} FU\n"
-			f"FG_Y    = {Fgy:7.4f} FU"
+			"T_Scale = {0:>6.2f} ×\n"
+			"T_Phys  = {1:>6.2f} Sec\n"
+			"D_Way   = {2:>6.2f} DU\n"
+			"\n"
+			"FG_X    = {3:>6.2f} FU\n"
+			"FG_Y    = {4:>6.2f} FU\n"
+			"|FG|    = {5:>6.2f} FU"
+			.format(Time_Scale, Tv, Sv, Fgx, Fgy, FG_abs)
 		)
 
 		return []
