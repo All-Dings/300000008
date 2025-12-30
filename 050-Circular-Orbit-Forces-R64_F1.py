@@ -109,7 +109,7 @@ def Make_Circular_Orbit_Forces_Animation(
 	# =========================================================
 
 	Ax_Right.set_title("Kraft-Komponenten entlang des Kreiswegs")
-	Ax_Right.set_xlabel("D_Way (S)")
+	Ax_Right.set_xlabel("S")
 	Ax_Right.set_ylabel("FG")
 
 	Ax_Right.set_xlim(0.0, float(S_Frame[-1]))
@@ -252,7 +252,7 @@ def Make_Circular_Orbit_Forces_Animation(
 		Info_Text.set_text(
 			"T_Scale = {0:>6.2f} ×\n"
 			"T_Phys  = {1:>6.2f} Sec\n"
-			"D_Way   = {2:>6.2f} DU\n"
+			"S_Cur   = {2:>6.2f} SU\n"
 			"\n"
 			"FG_X    = {3:>6.2f} FU\n"
 			"FG_Y    = {4:>6.2f} FU\n"

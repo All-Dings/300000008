@@ -337,18 +337,18 @@ def Make_Animation(
 			"Dim     = {0:>8d}\n"
 			"G       = {1:>8.2f} GU\n"
 			"T_Scale = {2:>8.2f} ×\n"
-			"R_Start = {3:>8.2f} LU\n"
+			"R_Start = {3:>8.2f} SU\n"
 			"T_Kick  = {4:>8.2f} Sec\n"
 			"\n"
 			"T_Phys  = {5:>8.2f} Sec\n"
 			"V_Cur   = {6:>8.2f} VU\n"
-			"R_Cur   = {7:>8.2f} LU\n"
+			"R_Cur   = {7:>8.2f} SU\n"
 			"\n"
 			"E_Mov   = {8:>8.4f} EU\n"
 			"E_Gra   = {9:>8.4f} EU\n"
 			"E_Sum   = {10:>8.4f} EU\n"
 			"\n"
-			"L_Spin  = {11:>8.4f} LU·VU"
+			"L_Spin  = {11:>8.4f} SU·VU"
 			.format(Dim, G, Time_Scale, R0, Kick_Time, t, v, r, E_Mov, E_Gra, E_Sum, l)
 		)
 

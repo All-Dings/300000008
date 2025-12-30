@@ -340,15 +340,15 @@ def Make_GR_Animation(
 			"G       = {0:>7.2f} GU\n"
 			"T_Scale = {1:>7.2f} ×\n"
 			"V_Light = {2:>7.2f} VU\n"
-			"R_Start = {3:>7.2f} LU\n"
+			"R_Start = {3:>7.2f} SU\n"
 			"T_Kick  = {4:>7.2f} Sec\n"
 			"\n"
 			"T_Phys  = {5:>7.2f} Sec\n"
 			"V_Curr  = {6:>7.2f} VU\n"
-			"R_Curr  = {7:>7.2f} LU\n"
+			"R_Curr  = {7:>7.2f} SU\n"
 			"\n"
 			"E_Sum   = {8:>7.4f} EU\n"
-			"L_Spin  = {9:>7.4f} LU·VU"
+			"L_Spin  = {9:>7.4f} SU·VU"
 			.format(G, Time_Scale,C, R0, Kick_Time, t, v, r, e, l)
 		)
 
