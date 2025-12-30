@@ -363,7 +363,7 @@ def Main() -> None:
 
 	Kick_Time = 2.0
 
-	Output_Dir = Path("050-Orbit-Kick-Dim{0}".format(Dim))
+	Output_Dir = Path("031-Orbit-Kick-Dim{0}".format(Dim))
 	Output_Dir.mkdir(exist_ok=True)
 
 	Make_Animation(
