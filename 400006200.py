@@ -82,7 +82,7 @@ def Make_Circular_Orbit_Forces_Animation(
 	# Secondary Axis: Force Scale matching Right Plot
 	Ax_Left_Force = Ax_Left.twinx()
 	Ax_Left_Force.set_ylim(Force_Min, Force_Max)
-	Ax_Left_Force.set_ylabel("Kraft")
+	# Ax_Left_Force.set_ylabel("Kraft")
 	Ax_Left_Force.set_yticks(Np.arange(-10, 11, 1))
 
 	# Grid: X = Space (x-position), Y = Force Scale
@@ -118,8 +118,8 @@ def Make_Circular_Orbit_Forces_Animation(
 	# ------------------------------------------------------------
 
 	Ax_Right.set_title("Kraftkomponenten über Weg")
-	Ax_Right.set_xlabel("S_Weg")
-	Ax_Right.set_ylabel("Kraft")
+	Ax_Right.set_xlabel("S_Cur")
+	Ax_Right.set_ylabel("FG")
 	Ax_Right.set_xlim(0.0, float(2.0 * Np.pi * R_Orbit))
 	Ax_Right.set_ylim(Force_Min, Force_Max)
 	Ax_Right.set_yticks(Np.arange(-10, 11, 1))
@@ -254,16 +254,16 @@ def Make_Circular_Orbit_Forces_Animation(
 		Angle_Deg = (Theta_Frame[Frame_Index] * 180.0 / Np.pi) % 360.0
 
 		Info_Text.set_text(
-			""
-			+ f"T_Scale     = {Time_Scale:+6.2f} ×\n"
-			+ f"T_Phys      = {T_Phys:6.2f} Sek\n"
-			+ f"T_Video     = {T_Video:6.2f} Sek\n"
-			+ f"L_Weg       = {Sv:6.2f} L_EH\n"
-			+ f"Winkel      = {Angle_Deg:6.2f} Grad\n"
-			+ f"FG_X        = {FG_X:+6.2f} F_EH\n"
-			+ f"FG_Y        = {FG_Y:+6.2f} F_EH\n"
-			+ f"SUM(FG_X,Y) = {FG_X + FG_Y:+6.2f} F_EH\n"
-			+ f"|FG|        = {FG:6.2f} F_EH")
+			"T_Scale     = {0:6.2f} ×\n"
+			"T_Phys      = {1:6.2f} Sec\n"
+			"T_Video     = {2:6.2f} Sec\n"
+			"S_Cur       = {3:6.2f} SU\n"
+			"A_Deg       = {4:6.2f} Deg\n"
+			"FG_X        = {5:+6.2f} FU\n"
+			"FG_Y        = {6:+6.2f} FU\n"
+			"SUM(FG_X,Y) = {7:+6.2f} FU\n"
+			"|FG|        = {8:6.2f} FU"
+			.format(Time_Scale, T_Phys, T_Video, Sv, Angle_Deg, FG_X, FG_Y, FG_X + FG_Y, FG))
 
 		return Ball, Arrow_Total, Arrow_X, Arrow_Y, Rect, Line_FG_X, Line_FG_Y
 
