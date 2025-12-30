@@ -147,8 +147,8 @@ def Make_Orbit_And_Line_Animation(
 	Ax_Left.set_aspect("equal", adjustable="box")
 	Ax_Left.set_xlim(-Limit, Limit)
 	Ax_Left.set_ylim(-Limit, Limit)
-	Ax_Left.set_xlabel("x")
-	Ax_Left.set_ylabel("y")
+	Ax_Left.set_xlabel("X")
+	Ax_Left.set_ylabel("Y")
 	Ax_Left.set_title("Kreisbahnen (1 Umlauf bei R=64)")
 
 	Ax_Left.scatter([0], [0], s=650, c="yellow", edgecolors="black", zorder=2)
@@ -160,7 +160,7 @@ def Make_Orbit_And_Line_Animation(
 	# ---------------- Right ----------------
 
 	Ax_Right.set_title("Gleiche Geschwindigkeit auf Geraden")
-	Ax_Right.set_xlabel("Weg")
+	Ax_Right.set_xlabel("S")
 	Ax_Right.set_ylabel("R")
 	Ax_Right.grid(True, alpha=0.25)
 
@@ -221,6 +221,13 @@ def Make_Orbit_And_Line_Animation(
 		va="top",
 		ha="left",
 		fontsize=11,
+		family="monospace",
+		bbox=dict(
+			boxstyle="round,pad=0.4",
+			facecolor="#E6E6E6",
+			edgecolor="black",
+			alpha=0.95,
+		),
 	)
 
 	def Init():
@@ -234,10 +241,19 @@ def Make_Orbit_And_Line_Animation(
 	def Update(F: int):
 		t_phys = float(T_Phys[F])
 
+		t_video = float(T_Video[F])
+		S_Cur = V_Orbit * t_phys
+
 		Info.set_text(
-			f"Time_Scale = {Time_Scale}x\n"
-			f"t_phys = {t_phys:6.2f} s\n"
-			f"v = {V_Orbit:g}"
+			"Dim     = {0:>8d}\n"
+			"G       = {1:>8.2f} GU\n"
+			"T_Scale = {2:>8.2f} ×\n"
+			"\n"
+			"T_Video = {3:>8.2f} Sec\n"
+			"T_Phys  = {4:>8.2f} Sec\n"
+			"S_Cur   = {5:>8.2f} SU\n"
+			"V_Cur   = {6:>8.2f} VU\n"
+			.format(2, G, Time_Scale, t_video, t_phys, S_Cur, V_Orbit)
 		)
 
 		for I in range(len(R_List)):
