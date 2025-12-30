@@ -353,7 +353,7 @@ def Make_Animation(
 
 
 # Dim = 2, 3, or 4
-def Make_Animation_4_Dim(Dim: int) -> None:
+def Make_Animation_4_Dim(Dim: int = 2, Time_Scale: float = 2.0, Orbits_After_Kick: float = 20.0) -> None:
 
 	G = 64.0
 	R0 = 4.0
@@ -377,8 +377,8 @@ def Make_Animation_4_Dim(Dim: int) -> None:
 		Name_Base="kick_with_comet_E_Lz_V_info",
 		Dt=0.01,
 		Fps=25,
-		Time_Scale=2.0,
-		Orbits_After_Kick=2.0,
+		Time_Scale=Time_Scale,
+		Orbits_After_Kick=Orbits_After_Kick,
 		Comet_Distance_Behind=7.0,
 		Comet_Appear_Delta_T=1.0,
 	)
@@ -386,9 +386,9 @@ def Make_Animation_4_Dim(Dim: int) -> None:
 	print("Done. Files written to:", Output_Dir)
 
 def Main() -> None:
-	Make_Animation_4_Dim(2)
-	Make_Animation_4_Dim(3)
-	Make_Animation_4_Dim(4)
+	Make_Animation_4_Dim(Dim=2, Time_Scale=4.0, Orbits_After_Kick=20.0)
+	Make_Animation_4_Dim(Dim=3, Time_Scale=4.0, Orbits_After_Kick=10.0)
+	Make_Animation_4_Dim(Dim=4, Time_Scale=4.0, Orbits_After_Kick=1.0)
 
 if __name__ == "__main__":
 	Main()
