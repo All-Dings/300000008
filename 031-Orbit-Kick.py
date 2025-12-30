@@ -329,6 +329,10 @@ def Make_Animation(
 		L_Cursor.set_data([t], [l])
 		S_Cursor.set_data([t], [v])
 
+		E_Mov = 0.5 * v * v
+		E_Gra = Potential(Dim, G, r)
+		E_Sum = E_Mov + E_Gra
+
 		Info.set_text(
 			"Dim       = {0:>6d}\n"
 			"G         = {1:>6.2f}\n"
@@ -339,9 +343,12 @@ def Make_Animation(
 			"Speed     = {5:>6.2f}\n"
 			"Radius    = {6:>6.2f}\n"
 			"\n"
-			"E         = {7:>9.4f}\n"
-			"Lz        = {8:>9.4f}"
-			.format(Dim, G, R0, Kick_Time, t, v, r, e, l)
+			"E_Mov     = {7:>9.4f}\n"
+			"E_Gra     = {8:>9.4f}\n"
+			"E_Sum     = {9:>9.4f}\n"
+			"\n"
+			"Lz        = {10:>9.4f}"
+			.format(Dim, G, R0, Kick_Time, t, v, r, E_Mov, E_Gra, E_Sum, l)
 		)
 
 		return []
