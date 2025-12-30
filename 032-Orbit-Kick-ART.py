@@ -260,9 +260,9 @@ def Make_GR_Animation(
 		Ax.axvline(Kick_Time, alpha=0.4)
 		Ax.set_xlabel("t")
 
-	Ax_E.set_ylabel("E_eff")
-	Ax_L.set_ylabel("Lz")
-	Ax_S.set_ylabel("V")
+	Ax_E.set_ylabel("E_Sum")
+	Ax_L.set_ylabel("L_Spin (Lz)")
+	Ax_S.set_ylabel("V_Curr")
 
 	E_Cursor, = Ax_E.plot([], [], "o")
 	L_Cursor, = Ax_L.plot([], [], "o")
@@ -337,19 +337,19 @@ def Make_GR_Animation(
 		S_Cursor.set_data([t], [v])
 
 		Info.set_text(
-			"Model     =     GR-1PN\n"
-			"G         = {0:>10.4f}\n"
-			"C         = {1:>10.4f}\n"
-			"R0        = {2:>10.4f}\n"
-			"Kick_Time = {3:>10.4f}\n"
+			"G       = {0:>7.2f} GU\n"
+			"T_Scale = {1:>7.2f} ×\n"
+			"V_Light = {2:>7.2f} VU\n"
+			"R_Start = {3:>7.2f} LU\n"
+			"T_Kick  = {4:>7.2f} Sec\n"
 			"\n"
-			"t_phys    = {4:>10.4f}\n"
-			"Speed     = {5:>10.4f}\n"
-			"Radius    = {6:>10.4f}\n"
+			"T_Phys  = {5:>7.2f} Sec\n"
+			"V_Curr  = {6:>7.2f} VU\n"
+			"R_Curr  = {7:>7.2f} LU\n"
 			"\n"
-			"E_eff     = {7:>10.4f}\n"
-			"Lz        = {8:>10.4f}"
-			.format(G, C, R0, Kick_Time, t, v, r, e, l)
+			"E_Sum   = {8:>7.4f} EU\n"
+			"L_Spin  = {9:>7.4f} LU·VU"
+			.format(G, Time_Scale,C, R0, Kick_Time, t, v, r, e, l)
 		)
 
 		return []
