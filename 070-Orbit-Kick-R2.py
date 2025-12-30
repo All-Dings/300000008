@@ -231,8 +231,8 @@ def Make_Animation(
 	Ax_Orbit.set_aspect("equal", adjustable="box")
 	Ax_Orbit.set_xlim(-Limit, Limit)
 	Ax_Orbit.set_ylim(-Limit, Limit)
-	Ax_Orbit.set_xlabel("x")
-	Ax_Orbit.set_ylabel("y")
+	Ax_Orbit.set_xlabel("X")
+	Ax_Orbit.set_ylabel("Y")
 	Ax_Orbit.set_title("Dim={0}: Tangential Kick With Comet (V: {1:g} → {2:g})".format(Dim, V0, V1))
 
 	Ax_Orbit.scatter([0.0], [0.0], s=700, c="yellow", edgecolors="black", zorder=5)
@@ -251,7 +251,7 @@ def Make_Animation(
 
 	for Ax in (Ax_E, Ax_L, Ax_S):
 		Ax.axvline(T_Kick, alpha=0.4)
-		Ax.set_xlabel("t")
+		Ax.set_xlabel("T")
 
 	Ax_E.set_ylabel("E_Sum")
 	Ax_L.set_ylabel("L_Spin (Lz)")
