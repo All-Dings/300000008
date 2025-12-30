@@ -239,10 +239,10 @@ def Make_Orbit_And_Line_Animation(
 		return []
 
 	def Update(F: int):
-		t_phys = float(T_Phys[F])
+		T_Phys = float(T_Phys[F])
 
-		t_video = float(T_Video[F])
-		S_Cur = V_Orbit * t_phys
+		T_Video = float(T_Video[F])
+		S_Cur = V_Orbit * T_Phys
 
 		Info.set_text(
 			"Dim     = {0:>8d}\n"
@@ -253,7 +253,7 @@ def Make_Orbit_And_Line_Animation(
 			"T_Phys  = {4:>8.2f} Sec\n"
 			"S_Cur   = {5:>8.2f} SU\n"
 			"V_Cur   = {6:>8.2f} VU\n"
-			.format(2, G, Time_Scale, t_video, t_phys, S_Cur, V_Orbit)
+			.format(2, G, Time_Scale, T_Video, T_Phys, S_Cur, V_Orbit)
 		)
 
 		for I in range(len(R_List)):
@@ -265,7 +265,7 @@ def Make_Orbit_And_Line_Animation(
 			Ball_L[I].set_data(x, y)
 			Trail_L[I].set_data(TLX[I], TLY[I])
 
-			xl = V_Orbit * t_phys
+			xl = V_Orbit * T_Phys
 			y0 = float(Y_Pos_List[I])
 
 			TRX[I].append(xl)
