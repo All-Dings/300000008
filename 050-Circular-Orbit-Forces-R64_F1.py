@@ -109,15 +109,15 @@ def Make_Circular_Orbit_Forces_Animation(
 	# =========================================================
 
 	Ax_Right.set_title("Kraft-Komponenten entlang des Kreiswegs")
-	Ax_Right.set_xlabel("Weg s")
-	Ax_Right.set_ylabel("Kraft")
+	Ax_Right.set_xlabel("D_Weg (S)")
+	Ax_Right.set_ylabel("FG")
 
 	Ax_Right.set_xlim(0.0, float(S_Frame[-1]))
 	Ax_Right.set_ylim(-1.1 * (G / R_Orbit), 1.1 * (G / R_Orbit))
 	Ax_Right.grid(True, alpha=0.35)
 
-	Line_Fx, = Ax_Right.plot([], [], color="tab:red", label="Fg_x(s)")
-	Line_Fy, = Ax_Right.plot([], [], color="tab:green", label="Fg_y(s)")
+	Line_Fx, = Ax_Right.plot([], [], color="tab:red", label="FG_X(S)")
+	Line_Fy, = Ax_Right.plot([], [], color="tab:green", label="FG_X(S)")
 
 	Point_Fx, = Ax_Right.plot([], [], "o", color="tab:red")
 	Point_Fy, = Ax_Right.plot([], [], "o", color="tab:green")
@@ -239,11 +239,11 @@ def Make_Circular_Orbit_Forces_Animation(
 		Point_Fy.set_data([Sv], [Fgy])
 
 		Info_Text.set_text(
-			f"Time_Scale = {Time_Scale:g}x\n"
-			f"t (phys) = {Tv:6.2f} s\n"
-			f"s = {Sv:7.2f}\n"
-			f"Fg_x = {Fgx:7.4f}\n"
-			f"Fg_y = {Fgy:7.4f}"
+			f"T_Scale = {Time_Scale:g} ×\n"
+			f"T_Phys  = {Tv:7.2f} Secs\n"
+			f"D_Way   = {Sv:7.2f} DU\n"
+			f"FG_X    = {Fgx:7.4f} FU\n"
+			f"FG_Y    = {Fgy:7.4f} FU"
 		)
 
 		return []
