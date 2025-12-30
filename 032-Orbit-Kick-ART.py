@@ -372,7 +372,7 @@ def Main() -> None:
 
 	Kick_Time = 2.0
 
-	Output_Dir = Path("032-Orbit-Kick_ART")
+	Output_Dir = Path("032-Orbit-Kick-ART")
 	Output_Dir.mkdir(exist_ok=True)
 
 	Make_GR_Animation(
