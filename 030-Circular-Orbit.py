@@ -37,7 +37,7 @@ def Save_Animation_Gif_And_Mp4(
 def Simulate_Multi_Circular_Orbits(
 	G: float,
 	R_List: list[float],
-	V_Orbit: float,
+	V_Cur: float,
 	Dt: float,
 	Step_Count: int,
 ) -> tuple[Np.ndarray, Np.ndarray]:
@@ -58,8 +58,8 @@ def Simulate_Multi_Circular_Orbits(
 		Theta = float(Angle_Array[I])
 		X[I] = R * Np.cos(Theta)
 		Y[I] = R * Np.sin(Theta)
-		Vx[I] = -V_Orbit * Np.sin(Theta)
-		Vy[I] = +V_Orbit * Np.cos(Theta)
+		Vx[I] = -V_Cur * Np.sin(Theta)
+		Vy[I] = +V_Cur * Np.cos(Theta)
 
 	def Acc(Xv: float, Yv: float) -> tuple[float, float]:
 		R = Np.hypot(Xv, Yv)
@@ -102,27 +102,27 @@ def Make_Orbit_And_Line_Animation(
 	R_List: list[float],
 	Output_Dir: Path,
 	Name_Base: str,
-	V_Orbit: float = 8.0,
+	V_Cur: float = 8.0,
 	Dt: float = 0.01,
 	Fps: int = 25,
 	Time_Scale: float = 2.0,
 ) -> None:
 
 	R_Max = max(R_List)
-	T_Orbit_Max = 2.0 * Np.pi * R_Max / V_Orbit
+	T_Orbit_Max = 2.0 * Np.pi * R_Max / V_Cur
 	T_Total = T_Orbit_Max   # one orbit for R=64
 
 	Step_Count = int(Np.ceil(T_Total / Dt)) + 1
 
 	X_All, Y_All = Simulate_Multi_Circular_Orbits(
-		G, R_List, V_Orbit, Dt, Step_Count
+		G, R_List, V_Cur, Dt, Step_Count
 	)
 
 	Frame_Count = int(Np.ceil((T_Total / Time_Scale) * Fps)) + 1
-	T_Video = Np.arange(Frame_Count) / Fps
-	T_Phys = T_Video * Time_Scale
+	T_Video_Array = Np.arange(Frame_Count) / Fps
+	T_Phys_Array = T_Video_Array * Time_Scale
 
-	Idx = Np.clip((T_Phys / Dt).astype(int), 0, Step_Count - 1)
+	Idx = Np.clip((T_Phys_Array / Dt).astype(int), 0, Step_Count - 1)
 	X_Frame = X_All[:, Idx]
 	Y_Frame = Y_All[:, Idx]
 
@@ -164,7 +164,7 @@ def Make_Orbit_And_Line_Animation(
 	Ax_Right.set_ylabel("R")
 	Ax_Right.grid(True, alpha=0.25)
 
-	Distance_Total = V_Orbit * T_Total
+	Distance_Total = V_Cur * T_Total
 	Ax_Right.set_xlim(0.0, Distance_Total * 1.05)
 
 	# reversed vertical order: R=1 top, R=64 bottom
@@ -177,7 +177,7 @@ def Make_Orbit_And_Line_Animation(
 		Color = Planet_Color_List[I]
 		Y0 = float(Y_Pos_List[I])
 
-		T_Orbit = 2.0 * Np.pi * R / V_Orbit
+		T_Orbit = 2.0 * Np.pi * R / V_Cur
 		Cycle_Count = int(Np.floor(T_Total / T_Orbit + 1e-9))
 		Marker_X_List = [(2.0 * Np.pi * R) * K for K in range(Cycle_Count + 1)]
 
@@ -239,10 +239,10 @@ def Make_Orbit_And_Line_Animation(
 		return []
 
 	def Update(F: int):
-		T_Phys = float(T_Phys[F])
+		T_Phys = float(T_Phys_Array[F])
 
-		T_Video = float(T_Video[F])
-		S_Cur = V_Orbit * T_Phys
+		T_Video = float(T_Video_Array[F])
+		S_Cur = V_Cur * T_Phys
 
 		Info.set_text(
 			"Dim     = {0:>8d}\n"
@@ -253,7 +253,7 @@ def Make_Orbit_And_Line_Animation(
 			"T_Phys  = {4:>8.2f} Sec\n"
 			"S_Cur   = {5:>8.2f} SU\n"
 			"V_Cur   = {6:>8.2f} VU\n"
-			.format(2, G, Time_Scale, T_Video, T_Phys, S_Cur, V_Orbit)
+			.format(2, G, Time_Scale, T_Video, T_Phys, S_Cur, V_Cur)
 		)
 
 		for I in range(len(R_List)):
@@ -265,7 +265,7 @@ def Make_Orbit_And_Line_Animation(
 			Ball_L[I].set_data(x, y)
 			Trail_L[I].set_data(TLX[I], TLY[I])
 
-			xl = V_Orbit * T_Phys
+			xl = V_Cur * T_Phys
 			y0 = float(Y_Pos_List[I])
 
 			TRX[I].append(xl)
