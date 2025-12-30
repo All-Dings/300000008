@@ -32,9 +32,9 @@ def Save_Animation_Gif_And_Mp4(
 
 def Circular_Speed_Newton(
 	G: float,
-	R0: float,
+	R_Start: float,
 ) -> float:
-	return math.sqrt(G / max(1e-12, R0))
+	return math.sqrt(G / max(1e-12, R_Start))
 
 
 def Unit_Tangent_2D(
@@ -105,10 +105,10 @@ def Energy_Lz_Speed_GR_Effective(
 def Simulate_Orbit_GR_With_Tangential_Kick(
 	G: float,
 	C: float,
-	R0: float,
+	R_Start: float,
 	V0: float,
 	V1: float,
-	Kick_Time: float,
+	T_Kick: float,
 	Dt: float,
 	T_Total: float,
 ):
@@ -119,7 +119,7 @@ def Simulate_Orbit_GR_With_Tangential_Kick(
 	Pos = Np.zeros(Dim, dtype=float)
 	Vel = Np.zeros(Dim, dtype=float)
 
-	Pos[0] = float(R0)
+	Pos[0] = float(R_Start)
 	Vel[1] = float(V0)
 
 	Pos_Array = Np.zeros((Step_Count, Dim), dtype=float)
@@ -129,7 +129,7 @@ def Simulate_Orbit_GR_With_Tangential_Kick(
 	S_Array = Np.zeros(Step_Count, dtype=float)
 	T_Array = Np.arange(Step_Count, dtype=float) * Dt
 
-	Kick_Step = int(round(Kick_Time / Dt))
+	Kick_Step = int(round(T_Kick / Dt))
 	Kick_Step = max(0, min(Step_Count - 1, Kick_Step))
 	Kick_Done = False
 
@@ -162,10 +162,10 @@ def Simulate_Orbit_GR_With_Tangential_Kick(
 def Make_GR_Animation(
 	G: float,
 	C: float,
-	R0: float,
+	R_Start: float,
 	V0: float,
 	V1: float,
-	Kick_Time: float,
+	T_Kick: float,
 	Output_Dir: Path,
 	Name_Base: str,
 	Dt: float = 0.01,
@@ -176,16 +176,16 @@ def Make_GR_Animation(
 	Comet_Appear_Delta_T: float = 1.0,
 ) -> None:
 
-	T_Orbit = 2.0 * math.pi * R0 / max(1e-9, V0)
-	T_Total = max(Kick_Time + Orbits_After_Kick * T_Orbit, 1.2 * T_Orbit)
+	T_Orbit = 2.0 * math.pi * R_Start / max(1e-9, V0)
+	T_Total = max(T_Kick + Orbits_After_Kick * T_Orbit, 1.2 * T_Orbit)
 
 	Pos, Vel, E, Lz, S, T, Kick_Step = Simulate_Orbit_GR_With_Tangential_Kick(
 		G=G,
 		C=C,
-		R0=R0,
+		R_Start=R_Start,
 		V0=V0,
 		V1=V1,
-		Kick_Time=Kick_Time,
+		T_Kick=T_Kick,
 		Dt=Dt,
 		T_Total=T_Total,
 	)
@@ -205,15 +205,15 @@ def Make_GR_Animation(
 
 	R_Array = Np.linalg.norm(Pos, axis=1)
 	R_Max = float(Np.max(R_Array))
-	Limit = max(R_Max * 1.15, R0 * 1.8)
+	Limit = max(R_Max * 1.15, R_Start * 1.8)
 
 	Kick_X = float(Pos[Kick_Step, 0])
 	Kick_Y = float(Pos[Kick_Step, 1])
 
 	Tan_X, Tan_Y = Unit_Tangent_2D(Kick_X, Kick_Y)
 
-	Comet_T_Start = max(0.0, Kick_Time - Comet_Appear_Delta_T)
-	Comet_V = Comet_Distance_Behind / max(1e-9, (Kick_Time - Comet_T_Start))
+	Comet_T_Start = max(0.0, T_Kick - Comet_Appear_Delta_T)
+	Comet_V = Comet_Distance_Behind / max(1e-9, (T_Kick - Comet_T_Start))
 
 	Comet_Xf = Np.full(Frame_Count, Np.nan)
 	Comet_Yf = Np.full(Frame_Count, Np.nan)
@@ -222,8 +222,8 @@ def Make_GR_Animation(
 		tp = float(T_Phys[i])
 		if tp < Comet_T_Start:
 			continue
-		if tp <= Kick_Time:
-			d = (Kick_Time - tp) * Comet_V
+		if tp <= T_Kick:
+			d = (T_Kick - tp) * Comet_V
 			Comet_Xf[i] = Kick_X - d * Tan_X
 			Comet_Yf[i] = Kick_Y - d * Tan_Y
 
@@ -238,14 +238,14 @@ def Make_GR_Animation(
 	Ax_Orbit.set_aspect("equal", adjustable="box")
 	Ax_Orbit.set_xlim(-Limit, Limit)
 	Ax_Orbit.set_ylim(-Limit, Limit)
-	Ax_Orbit.set_xlabel("x")
-	Ax_Orbit.set_ylabel("y")
+	Ax_Orbit.set_xlabel("X")
+	Ax_Orbit.set_ylabel("Y")
 	Ax_Orbit.set_title("GR Approx (Schwarzschild 1PN): Kick With Comet (V: {0:g} → {1:g})".format(V0, V1))
 
 	Ax_Orbit.scatter([0.0], [0.0], s=700, c="yellow", edgecolors="black", zorder=5)
 
 	Theta = Np.linspace(0.0, 2.0 * math.pi, 600)
-	Ax_Orbit.plot(R0 * Np.cos(Theta), R0 * Np.sin(Theta), alpha=0.15)
+	Ax_Orbit.plot(R_Start * Np.cos(Theta), R_Start * Np.sin(Theta), alpha=0.15)
 
 	Trail, = Ax_Orbit.plot([], [], alpha=0.65)
 	Body, = Ax_Orbit.plot([], [], "o", markersize=10)
@@ -257,12 +257,12 @@ def Make_GR_Animation(
 	Ax_S.plot(Tf, Sf, alpha=0.35)
 
 	for Ax in (Ax_E, Ax_L, Ax_S):
-		Ax.axvline(Kick_Time, alpha=0.4)
-		Ax.set_xlabel("t")
+		Ax.axvline(T_Kick, alpha=0.4)
+		Ax.set_xlabel("T")
 
 	Ax_E.set_ylabel("E_Sum")
 	Ax_L.set_ylabel("L_Spin (Lz)")
-	Ax_S.set_ylabel("V_Curr")
+	Ax_S.set_ylabel("V_Cur")
 
 	E_Cursor, = Ax_E.plot([], [], "o")
 	L_Cursor, = Ax_L.plot([], [], "o")
@@ -307,7 +307,7 @@ def Make_GR_Animation(
 
 		x = float(Xf[F])
 		y = float(Yf[F])
-		t = float(Tf[F])
+		T_Phys = float(Tf[F])
 
 		TX.append(x)
 		TY.append(y)
@@ -327,29 +327,29 @@ def Make_GR_Animation(
 			Kick_Marker.set_alpha(0.9)
 			Kick_Shown = True
 
-		e = float(Ef[F])
-		l = float(Lf[F])
-		v = float(Sf[F])
-		r = float(math.hypot(x, y))
+		E_Sum = float(Ef[F])
+		L_Spin = float(Lf[F])
+		V_Cur = float(Sf[F])
+		R_Cur = float(math.hypot(x, y))
 
-		E_Cursor.set_data([t], [e])
-		L_Cursor.set_data([t], [l])
-		S_Cursor.set_data([t], [v])
+		E_Cursor.set_data([T_Phys], [E_Sum])
+		L_Cursor.set_data([T_Phys], [L_Spin])
+		S_Cursor.set_data([T_Phys], [V_Cur])
 
 		Info.set_text(
 			"G       = {0:>7.2f} GU\n"
+			"C       = {2:>7.2f} VU\n"
 			"T_Scale = {1:>7.2f} ×\n"
-			"V_Light = {2:>7.2f} VU\n"
 			"R_Start = {3:>7.2f} SU\n"
 			"T_Kick  = {4:>7.2f} Sec\n"
 			"\n"
 			"T_Phys  = {5:>7.2f} Sec\n"
-			"V_Curr  = {6:>7.2f} VU\n"
-			"R_Curr  = {7:>7.2f} SU\n"
+			"V_Cur   = {6:>7.2f} VU\n"
+			"R_Cur   = {7:>7.2f} SU\n"
 			"\n"
 			"E_Sum   = {8:>7.4f} EU\n"
 			"L_Spin  = {9:>7.4f} SU·VU"
-			.format(G, Time_Scale,C, R0, Kick_Time, t, v, r, e, l)
+			.format(G, Time_Scale, C, R_Start, T_Kick, T_Phys, V_Cur, R_Cur, E_Sum, L_Spin)
 		)
 
 		return []
@@ -363,12 +363,12 @@ def Make_GR_Animation(
 # Choose C large for weak GR. Smaller C => stronger Precession (for Visualization).
 def Make_GR_Animation_4_C(C: float) -> None:
 	G = 64.0
-	R0 = 4.0
+	R_Start = 4.0
 
-	V0 = Circular_Speed_Newton(G, R0)
+	V0 = Circular_Speed_Newton(G, R_Start)
 	V1 = V0 + 1.0
 
-	Kick_Time = 2.0
+	T_Kick = 2.0
 
 	Output_Dir = Path("032-Orbit-Kick-ART")
 	Output_Dir.mkdir(exist_ok=True)
@@ -376,10 +376,10 @@ def Make_GR_Animation_4_C(C: float) -> None:
 	Make_GR_Animation(
 		G=G,
 		C=C,
-		R0=R0,
+		R_Start=R_Start,
 		V0=V0,
 		V1=V1,
-		Kick_Time=Kick_Time,
+		T_Kick=T_Kick,
 		Output_Dir=Output_Dir,
 		Name_Base=f"gr_kick_with_comet_Eeff_Lz_V-{C}",
 		Dt=0.01,
