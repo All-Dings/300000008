@@ -253,9 +253,9 @@ def Make_Animation(
 		Ax.axvline(Kick_Time, alpha=0.4)
 		Ax.set_xlabel("t")
 
-	Ax_E.set_ylabel("E")
-	Ax_L.set_ylabel("Lz")
-	Ax_S.set_ylabel("V")
+	Ax_E.set_ylabel("E_Sum")
+	Ax_L.set_ylabel("L_Spin (Lz)")
+	Ax_S.set_ylabel("V_Cur")
 
 	E_Cursor, = Ax_E.plot([], [], "o")
 	L_Cursor, = Ax_L.plot([], [], "o")
@@ -334,21 +334,22 @@ def Make_Animation(
 		E_Sum = E_Mov + E_Gra
 
 		Info.set_text(
-			"Dim       = {0:>6d}\n"
-			"G         = {1:>6.2f}\n"
-			"R0        = {2:>6.2f}\n"
-			"Kick_Time = {3:>6.2f}\n"
+			"Dim     = {0:>8d}\n"
+			"G       = {1:>8.2f} GU\n"
+			"T_Scale = {2:>8.2f} ×\n"
+			"R_Start = {3:>8.2f} LU\n"
+			"T_Kick  = {4:>8.2f} Sec\n"
 			"\n"
-			"t_phys    = {4:>6.2f}\n"
-			"Speed     = {5:>6.2f}\n"
-			"Radius    = {6:>6.2f}\n"
+			"T_Phys  = {5:>8.2f} Sec\n"
+			"V_Cur   = {6:>8.2f} VU\n"
+			"R_Cur   = {7:>8.2f} LU\n"
 			"\n"
-			"E_Mov     = {7:>9.4f}\n"
-			"E_Gra     = {8:>9.4f}\n"
-			"E_Sum     = {9:>9.4f}\n"
+			"E_Mov   = {8:>8.4f} EU\n"
+			"E_Gra   = {9:>8.4f} EU\n"
+			"E_Sum   = {10:>8.4f} EU\n"
 			"\n"
-			"Lz        = {10:>9.4f}"
-			.format(Dim, G, R0, Kick_Time, t, v, r, E_Mov, E_Gra, E_Sum, l)
+			"L_Spin  = {11:>8.4f} LU·VU"
+			.format(Dim, G, Time_Scale, R0, Kick_Time, t, v, r, E_Mov, E_Gra, E_Sum, l)
 		)
 
 		return []
@@ -370,7 +371,7 @@ def Make_Animation_4_Dim(Dim: int = 2, Time_Scale: float = 2.0, Orbits_After_Kic
 
 	Kick_Time = 2.0
 
-	Output_Dir = Path("031-Orbit-Kick-Dim{0}".format(Dim))
+	Output_Dir = Path("031-Orbit-Kick-R2")
 	Output_Dir.mkdir(exist_ok=True)
 
 	Make_Animation(
@@ -381,7 +382,7 @@ def Make_Animation_4_Dim(Dim: int = 2, Time_Scale: float = 2.0, Orbits_After_Kic
 		V1=V1,
 		Kick_Time=Kick_Time,
 		Output_Dir=Output_Dir,
-		Name_Base="kick_with_comet_E_Lz_V_info",
+		Name_Base=f"kick_with_comet_E_Lz_V_info-{Dim}D",
 		Dt=0.01,
 		Fps=25,
 		Time_Scale=Time_Scale,
