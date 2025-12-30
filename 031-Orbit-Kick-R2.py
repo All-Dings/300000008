@@ -74,12 +74,12 @@ def Energy_Lz_Speed(
 def Circular_Speed(
 	Dim: int,
 	G: float,
-	R0: float,
+	R_Start: float,
 ) -> float:
 
 	if Dim == 2:
 		return math.sqrt(G)
-	return math.sqrt(G / (R0 ** (Dim - 2)))
+	return math.sqrt(G / (R_Start ** (Dim - 2)))
 
 
 def Unit_Tangent_2D(
@@ -96,10 +96,10 @@ def Unit_Tangent_2D(
 def Simulate_With_Tangential_Kick(
 	Dim: int,
 	G: float,
-	R0: float,
+	R_Start: float,
 	V0: float,
 	V1: float,
-	Kick_Time: float,
+	T_Kick: float,
 	Dt: float,
 	T_Total: float,
 ) -> Tuple[Np.ndarray, Np.ndarray, Np.ndarray, Np.ndarray, Np.ndarray, Np.ndarray, int]:
@@ -109,7 +109,7 @@ def Simulate_With_Tangential_Kick(
 	Pos = Np.zeros(Dim, dtype=float)
 	Vel = Np.zeros(Dim, dtype=float)
 
-	Pos[0] = float(R0)
+	Pos[0] = float(R_Start)
 	Vel[1] = float(V0)
 
 	Pos_Array = Np.zeros((Step_Count, Dim), dtype=float)
@@ -119,7 +119,7 @@ def Simulate_With_Tangential_Kick(
 	S_Array = Np.zeros(Step_Count, dtype=float)
 	T_Array = Np.arange(Step_Count, dtype=float) * Dt
 
-	Kick_Step = int(round(Kick_Time / Dt))
+	Kick_Step = int(round(T_Kick / Dt))
 	Kick_Step = max(0, min(Step_Count - 1, Kick_Step))
 	Kick_Done = False
 
@@ -152,10 +152,10 @@ def Simulate_With_Tangential_Kick(
 def Make_Animation(
 	Dim: int,
 	G: float,
-	R0: float,
+	R_Start: float,
 	V0: float,
 	V1: float,
-	Kick_Time: float,
+	T_Kick: float,
 	Output_Dir: Path,
 	Name_Base: str,
 	Dt: float = 0.01,
@@ -169,16 +169,16 @@ def Make_Animation(
 	if Dim < 2:
 		raise ValueError("Dim must be >= 2 for the Orbit Plot and Lz.")
 
-	T_Orbit = 2.0 * math.pi * R0 / max(1e-9, V0)
-	T_Total = max(Kick_Time + Orbits_After_Kick * T_Orbit, 1.2 * T_Orbit)
+	T_Orbit = 2.0 * math.pi * R_Start / max(1e-9, V0)
+	T_Total = max(T_Kick + Orbits_After_Kick * T_Orbit, 1.2 * T_Orbit)
 
 	Pos, Vel, E, Lz, S, T, Kick_Step = Simulate_With_Tangential_Kick(
 		Dim=Dim,
 		G=G,
-		R0=R0,
+		R_Start=R_Start,
 		V0=V0,
 		V1=V1,
-		Kick_Time=Kick_Time,
+		T_Kick=T_Kick,
 		Dt=Dt,
 		T_Total=T_Total,
 	)
@@ -198,15 +198,15 @@ def Make_Animation(
 
 	R_Array = Np.linalg.norm(Pos, axis=1)
 	R_Max = float(Np.max(R_Array))
-	Limit = max(R_Max * 1.15, R0 * 1.8)
+	Limit = max(R_Max * 1.15, R_Start * 1.8)
 
 	Kick_X = float(Pos[Kick_Step, 0])
 	Kick_Y = float(Pos[Kick_Step, 1])
 
 	Tan_X, Tan_Y = Unit_Tangent_2D(Kick_X, Kick_Y)
 
-	Comet_T_Start = max(0.0, Kick_Time - Comet_Appear_Delta_T)
-	Comet_V = Comet_Distance_Behind / max(1e-9, (Kick_Time - Comet_T_Start))
+	Comet_T_Start = max(0.0, T_Kick - Comet_Appear_Delta_T)
+	Comet_V = Comet_Distance_Behind / max(1e-9, (T_Kick - Comet_T_Start))
 
 	Comet_Xf = Np.full(Frame_Count, Np.nan)
 	Comet_Yf = Np.full(Frame_Count, Np.nan)
@@ -215,8 +215,8 @@ def Make_Animation(
 		tp = float(T_Phys[i])
 		if tp < Comet_T_Start:
 			continue
-		if tp <= Kick_Time:
-			d = (Kick_Time - tp) * Comet_V
+		if tp <= T_Kick:
+			d = (T_Kick - tp) * Comet_V
 			Comet_Xf[i] = Kick_X - d * Tan_X
 			Comet_Yf[i] = Kick_Y - d * Tan_Y
 
@@ -238,7 +238,7 @@ def Make_Animation(
 	Ax_Orbit.scatter([0.0], [0.0], s=700, c="yellow", edgecolors="black", zorder=5)
 
 	Theta = Np.linspace(0.0, 2.0 * math.pi, 600)
-	Ax_Orbit.plot(R0 * Np.cos(Theta), R0 * Np.sin(Theta), alpha=0.15)
+	Ax_Orbit.plot(R_Start * Np.cos(Theta), R_Start * Np.sin(Theta), alpha=0.15)
 
 	Trail, = Ax_Orbit.plot([], [], alpha=0.65)
 	Body, = Ax_Orbit.plot([], [], "o", markersize=10)
@@ -250,7 +250,7 @@ def Make_Animation(
 	Ax_S.plot(Tf, Sf, alpha=0.35)
 
 	for Ax in (Ax_E, Ax_L, Ax_S):
-		Ax.axvline(Kick_Time, alpha=0.4)
+		Ax.axvline(T_Kick, alpha=0.4)
 		Ax.set_xlabel("t")
 
 	Ax_E.set_ylabel("E_Sum")
@@ -300,7 +300,7 @@ def Make_Animation(
 
 		x = float(Xf[F])
 		y = float(Yf[F])
-		t = float(Tf[F])
+		T_Phys = float(Tf[F])
 
 		TX.append(x)
 		TY.append(y)
@@ -321,17 +321,17 @@ def Make_Animation(
 			Kick_Shown = True
 
 		e = float(Ef[F])
-		l = float(Lf[F])
-		v = float(Sf[F])
-		r = float(math.hypot(x, y))
+		L_Spin = float(Lf[F])
+		V_Cur = float(Sf[F])
+		R_Cur = float(math.hypot(x, y))
 
-		E_Cursor.set_data([t], [e])
-		L_Cursor.set_data([t], [l])
-		S_Cursor.set_data([t], [v])
+		E_Cursor.set_data([T_Phys], [e])
+		L_Cursor.set_data([T_Phys], [L_Spin])
+		S_Cursor.set_data([T_Phys], [V_Cur])
 
-		E_Mov = 0.5 * v * v
-		E_Gra = Potential(Dim, G, r)
-		E_Sum = E_Mov + E_Gra
+		E_Mov = 0.5 * V_Cur * V_Cur
+		E_Grav = Potential(Dim, G, R_Cur)
+		E_Sum = E_Mov + E_Grav
 
 		Info.set_text(
 			"Dim     = {0:>8d}\n"
@@ -345,11 +345,11 @@ def Make_Animation(
 			"R_Cur   = {7:>8.2f} SU\n"
 			"\n"
 			"E_Mov   = {8:>8.4f} EU\n"
-			"E_Gra   = {9:>8.4f} EU\n"
+			"E_Grav  = {9:>8.4f} EU\n"
 			"E_Sum   = {10:>8.4f} EU\n"
 			"\n"
 			"L_Spin  = {11:>8.4f} SU·VU"
-			.format(Dim, G, Time_Scale, R0, Kick_Time, t, v, r, E_Mov, E_Gra, E_Sum, l)
+			.format(Dim, G, Time_Scale, R_Start, T_Kick, T_Phys, V_Cur, R_Cur, E_Mov, E_Grav, E_Sum, L_Spin)
 		)
 
 		return []
@@ -364,12 +364,12 @@ def Make_Animation(
 def Make_Animation_4_Dim(Dim: int = 2, Time_Scale: float = 2.0, Orbits_After_Kick: float = 20.0) -> None:
 
 	G = 64.0
-	R0 = 4.0
+	R_Start = 4.0
 
-	V0 = Circular_Speed(Dim, G, R0)
+	V0 = Circular_Speed(Dim, G, R_Start)
 	V1 = V0 + 1.0
 
-	Kick_Time = 2.0
+	T_Kick = 2.0
 
 	Output_Dir = Path("031-Orbit-Kick-R2")
 	Output_Dir.mkdir(exist_ok=True)
@@ -377,10 +377,10 @@ def Make_Animation_4_Dim(Dim: int = 2, Time_Scale: float = 2.0, Orbits_After_Kic
 	Make_Animation(
 		Dim=Dim,
 		G=G,
-		R0=R0,
+		R_Start=R_Start,
 		V0=V0,
 		V1=V1,
-		Kick_Time=Kick_Time,
+		T_Kick=T_Kick,
 		Output_Dir=Output_Dir,
 		Name_Base=f"kick_with_comet_E_Lz_V_info-{Dim}D",
 		Dt=0.01,
