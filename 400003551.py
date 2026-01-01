@@ -126,12 +126,12 @@ def _Run_FFmpeg(
 
 def Main() -> int:
 	# Directory
-	Output_Dir = "080-Clock"
+	Output_Dir = "./"
 	os.makedirs(Output_Dir, exist_ok=True)
 
 	Output_Path = os.path.join(
 		Output_Dir,
-		"Digital_Clock_24h_240w_Alpha.mov",
+		"400003552.mov",
 	)
 
 	Width = 240
